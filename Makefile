@@ -9,8 +9,8 @@ TwoDimTubes.o: TwoDimTubes.c
 	${CC} ${CFLAGS} ${EXTFLAGS} -c TwoDimTubes.c
 
 TwoDimTubes: TwoDimTubes.o 
-	${CC} ${LFLAGS} TwoDimTubes.o -o TwoDimTubes
+	${CC} ${LFLAGS} TwoDimTubes.o -o TwoDimTubes.out
  
 clean: 
-	rm -f TwoDimTubes.o TwoDimTubes.out test.txt
+	rm -f TwoDimTubes.o TwoDimTubes.out
 

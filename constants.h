@@ -20,7 +20,7 @@
 // Constants for writing to stdout and config
 #define WRITESTDOUT  30       // How often to print to stdout (# of MD loops)
 //current implimentation writes a file at every steepest descent step
-const char PotentialString[]="2WellSymTubes";// Potential Description 
+const char PotentialString[]="2WellTubes";// Potential Description 
 
 // Potential Function
 #define VFunc(x,y)           1.0l-2.0l*gsl_pow_int(x,2)+1.0l*gsl_pow_int(x,4)+1.0l*gsl_pow_int(y,2)
