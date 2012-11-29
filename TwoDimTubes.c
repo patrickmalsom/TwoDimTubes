@@ -211,16 +211,6 @@ void normalizeAverages(averages *tubeAve, int *tau);
 
 void tubesSteepestDescent(averages *tubeAve);
 
-// ============================== Array Plot functions =================================
-
-void accumulateArrayPlot(int arrayPlot[300][200], config *currentConfig);
-//accumulate the averages for the array plot
-// if in the bound of the array
-//this is not all that general (size of matrix is hardcoded)
-
-void writeArrayPlot(int arrayPlot[300][200], int MCloopi);
-//print the arrayPlot to file
-
 // ==================================================================================
 //               MAIN Program
 // ==================================================================================
@@ -244,7 +234,7 @@ int main(int argc, char *argv[])
   averages *tubeAve = calloc(NUMBEAD,sizeof(averages));
 
   //Incrimenter Declarations
-  int i,j;
+  int i;
   int acc,rej; // trackers for acceptance of MHMC loop
   int MDloopi,MCloopi, tubeloopi; 
   int tau=0; //incrimenter used in the averaging for normalization
@@ -265,17 +255,6 @@ int main(int argc, char *argv[])
 
   // storage for brownian bridge
   double *bb = calloc(NUMu,sizeof(double));
-
-  // array plot of the average path
-  //TODO make this into a global definition
-    //even better would be to only have it declared if the array plot function is actually called
-  //int xBinMax=300;
-  //int yBinMax=200;
-  int arrayPlot[300][200];
-  for(i=0;i<300;i++){
-    for(j=0;j<200;j++){
-      arrayPlot[i][j]=0;
-  } }
 
   //Print parameters for the run in stdout
   printf("=======================================================\n");
@@ -407,7 +386,6 @@ int main(int argc, char *argv[])
  
       //calculate the averages for the tubes estimator
       accumulateAverages(tubeAve,configNew,&tau);
-      accumulateArrayPlot(arrayPlot, configNew);
  
       printf("SPDE ratio: %+0.10f \n",ratio);
       // ==================================================================================
@@ -441,7 +419,6 @@ int main(int argc, char *argv[])
  
         //calculate the averages for the tubes estimator
         accumulateAverages(tubeAve,configNew,&tau);
-        //accumulateArrayPlot(arrayPlot, configNew);
       }
       // ==================================================================================
       //Metropolis Hastings Monte-Carlo test
@@ -466,12 +443,6 @@ int main(int argc, char *argv[])
     writeConfig(configNew,tubeAve,MCloopi);
     zeroAverages(tubeAve,&tau);
  
-    //writeArrayPlot(arrayPlot, MCloopi);
-    //for(i=0;i<300;i++){
-    //  for(j=0;j<200;j++){
-    //    arrayPlot[i][j]=0;
-    //} }
-
   }  //end tube gradient descent loop
 
   // GSL random number generator release memory
@@ -965,7 +936,7 @@ void accumulateAverages(averages *tubeAve, config *newConfig, int *tau)
 
   *tau=*tau+1;
 
-  I=0.0;
+  I=1.0;
   Iou=0.0;
 
   //calculate I and Iou. these are just numbers and are used below
@@ -1046,45 +1017,4 @@ void tubesSteepestDescent(averages *tubeAve)
   BPARX1= BPARX1-100.*gammaDescent*tempBparx1/((double)(NUMBEAD));
   BPARX2= BPARX2-gammaDescent*tempBparx2/((double)(NUMBEAD));
   BPARX3= BPARX3-gammaDescent*tempBparx3/((double)(NUMBEAD));
-}
-
-// ============================== Array Plot functions =================================
-
-void accumulateArrayPlot(int arrayPlot[300][200], config *currentConfig)
-//accumulate the averages for the array plot
-// if in the bound of the array
-//this is not all that general (size of matrix is hardcoded)
-{
-  int xbin;
-  int ybin;
-  int n;
-  
-  for(n=0;n<NUMBEAD;n++)
-  {
-    xbin=(int)(floor( (currentConfig[n].pos[0]+1.5)*100.));
-    ybin=(int)(floor( (currentConfig[n].pos[1]+0.5)*100.));
-    if((xbin>=0) && (xbin<300) && (ybin>=0) && (ybin<200))
-    {
-      arrayPlot[xbin][ybin]++;
-    }
-  }
-}
-
-//============================================
-void writeArrayPlot(int arrayPlot[300][200], int MCloopi)
-{
-//print the arrayPlot to file
-  char filename[50];
-  int i,j;
-
-  sprintf(filename,"arrayPlot%s-T%.2f-pos%07d.dat",PotentialString,TEMP,MCloopi);
-  FILE * pWritePos;
-  pWritePos = fopen(filename,"w");
-  for(i=0;i<300;i++){
-    for(j=0;j<200;j++){
-    fprintf(pWritePos, "%d \t",arrayPlot[i][j]);
-    }
-    fprintf(pWritePos, "\n");
-  }
-  fclose(pWritePos);
 }
