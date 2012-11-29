@@ -19,14 +19,68 @@
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_math.h>
 
-//constants header defines path length and temp etc.
-#include "params.h"
+// ==================================================================================
+// Preprocessor Definitions
+// ==================================================================================
+// Path Definitions
+#define NUMDIM    2           // Spacial Dimensions
+#define NUMBEAD   20001       // Path Points
+#define DU        0.0005      // path time step size
+#define PREDT     200.0       // DT=PreDT*DU^2 (path time)
 
-const int NUMu=NUMBEAD-1;
-const int NUMl=NUMBEAD-2;
+// Temperature Definition
+#define TEMP      0.15
 
-const double SIGMA=sqrt(2.0*TEMP);
+// Incrimenter Definitions
+#define NUMMD     30        // Number of MD steps 
+//      NUMMD     ~3/(2*sqrt(2*PreDT*DU^2)) <- Approx optimal value of NUMMD
+#define NUMMC     100      // Number of Metropolis Hastings MC steps
+#define NUMTUBE   10       // Number of tube steepest descent steps
+
+// Constants for writing to stdout and config
+#define WRITESTDOUT  30       // How often to print to stdout (# of MD loops)
+//current implimentation writes a file at every steepest descent step
+const char PotentialString[]="2WellTubes";// Potential Description 
+
+// Potential Function
+#define VFunc(x,y)           1.0l-2.0l*gsl_pow_int(x,2)+1.0l*gsl_pow_int(x,4)+1.0l*gsl_pow_int(y,2)
+
+//=============================================================================
+//                   Tubes Definitions 
+//=============================================================================
+
+// Smooth functions for use in Tubes HMC
+#define meanxFunc(t)    MPARX2/tanh(5*MPARX1)*tanh(MPARX1*(-5 + t))
+#define meanyFunc(t)    0.0
+#define dmeanxFunc(t)   MPARX1*MPARX2/tanh(5*MPARX1)*pow(cosh(MPARX1*(-5 + t)),-2.0)
+#define dmeanyFunc(t)   0.0
+#define ddmeanxFunc(t)  -2*pow(MPARX1,2.0)*MPARX2/tanh(5*MPARX1)*pow(cosh(MPARX1*(-5+t)),-2.0)*tanh(MPARX1*(-5+t))
+#define ddmeanyFunc(t)  0.0
+#define BxxFunc(t)      pow(BPARX1+(BPARX2-BPARX1)*exp(-BPARX3*pow(-5.+t,2)),2.0)
+#define ByyFunc(t)      4.0
+#define BxyFunc(t)      0.0
+
+//derivatives wrt the parameters
+#define BxxDParx1Func(t)  -2*(BPARX2 - BPARX3) * (BPARX3 + (BPARX2 - BPARX3)*exp(-BPARX1*pow(-5. + t,2))) *pow(-5. + t,2) * exp(-BPARX1*pow(-5. + t,2))
+#define BxxDParx2Func(t)  2*exp(-BPARX1*pow(-5.+t,2))*(BPARX3+(BPARX2-BPARX3)*exp(-BPARX1*pow(-5.+t,2)))
+#define BxxDParx3Func(t)  2*(1-exp(-BPARX1*pow(-5.+t,2)))*(BPARX3+(BPARX2-BPARX3)*exp(-BPARX1*pow(-5.+t,2)))
+
+//=============================================================================
+//                   Global Variables
+//=============================================================================
+const int NUMu=NUMBEAD-1;  //num of DU's
+const int NUMl=NUMBEAD-2;  //used in Linverse function
+
+const double DT=PREDT*DU*DU;
 const double SIGMA2=2.0*TEMP;
+
+// Initial Parameters for the means. To be optimized using KL gradient descent.
+double MPARX1 = 0.97;
+double MPARX2 = 2.00;
+
+double BPARX1 = 7.5;
+double BPARX2 = 0.42;
+double BPARX3 = 5.50;
 
 // ==================================================================================
 // Structure Definitions
@@ -73,14 +127,14 @@ void rotateConfig(config **a, config **b, config **c);
 void GenGaussRand(double GaussRand[NUMu], gsl_rng *RanNumPointer, double StdDev);
 //generate NUMBEAD of Gaussian random nums; save to GaussRandArray[]
 
-void generateBB(double bb[NUMBEAD], double du, double dt, double GaussRandArray[NUMu], gsl_rng *RanNumPointer);
+void generateBB(double bb[NUMBEAD], double GaussRandArray[NUMu], gsl_rng *RanNumPointer);
 // generates a standard browinan bridge (starts at zero ends at zero)
 // does not renormalize the bridge to correct quadratic variation (see renormBB)
 
-void renormBB(double bb[NUMBEAD], double du, double doubleNUMu);
+void renormBB(double bb[NUMBEAD]);
 //Renormalize the brownian bridge (velocities) for the correct thermal fluctuation
 
-void renorm(position *currentpos, double du, double doubleNUMu);
+void renorm(position *currentpos);
 //Renormalize the starting path (positions) for the correct thermal fluctuation
 
 void calcPotentials(config *currentConfig, int beadIndex);
@@ -88,17 +142,17 @@ void calcPotentials(config *currentConfig, int beadIndex);
 // G, gradG, LinvG, Energy for currentConfig[beadIndex].
 //Note: calculates potentials for a single bead (beadIndex).
 
-void LInverse(config* currentConfig, double doubleNUMl, double du, double vecdg[NUMl], double veci1[NUMl], double veci0[NUMl]);
+void LInverse(config* currentConfig, double vecdg[NUMl], double veci1[NUMl], double veci0[NUMl]);
 //L^(-1) y = x. finds the vector y
 // function solves for all currentConfig.LinvG of the current config
 
-void preconditionSPDE(config* currentConfig, config* newConfig, double du, double dt, double doubleNUMu, double bb[NUMBEAD], double GaussRandArray[NUMu], gsl_rng *RanNumPointer);
+void preconditionSPDE(config* currentConfig, config* newConfig, double bb[NUMBEAD], double GaussRandArray[NUMu], gsl_rng *RanNumPointer);
 //performs the SPDE step. uses current config and a renormalized auxillary velocities to calculate a new config. Requires random numbers from gsl.
 
-void MolecularDynamics(config *oldConfig, config *currentConfig, config *newConfig, double du, double dt);
+void MolecularDynamics(config *oldConfig, config *currentConfig, config *newConfig);
 //performs molecular dynamics. uses oldConfig and currentConfig to calculate newConfig
 
-void ProbAccRatio(config *currentConfig, config *newConfig, double dt, double du, double *ratio);
+void ProbAccRatio(config *currentConfig, config *newConfig, double *ratio);
 // calculate the probability accaptance ratio for the step
 //used to determine the acc/rej of the Metropolis-Hastings MC test
 
@@ -143,10 +197,10 @@ void printDistance(config *newConfig, position *savePos);
 void zeroAverages(averages *tubeAve, int *tau);
 //zero all elements in the averages struct 
 
-void initMeans(config *currentConfig, double du);
+void initMeans(config *currentConfig);
 // initialize the means. This is only called once per run
 
-void accumulateAverages(averages *tubeAve, config *newConfig, int *tau, double dt);
+void accumulateAverages(averages *tubeAve, config *newConfig, int *tau);
 //sum the averages. This includes the mean (sum of the positions) and the 
 //square of the positions. This is enough information to calculate the covariance
 //matrix in post processing
@@ -189,15 +243,6 @@ int main(int argc, char *argv[])
   //averages used for minimization of KL distance
   averages *tubeAve = calloc(NUMBEAD,sizeof(averages));
 
-  double doubleNUMu=(double)NUMu;  //num of du's
-  double doubleNUMl=(double)NUMl;  //used in Linverse function
-
-  //Parameters
-  //TODO change {du, dt, h} to not be called in any functions. These should be global constants
-  double du=DU; 
-  double dt=PREDT*DU*DU;
-  double h=sqrt(2.0l*dt);
-
   //Incrimenter Declarations
   int i,j;
   int acc,rej; // trackers for acceptance of MHMC loop
@@ -214,6 +259,9 @@ int main(int argc, char *argv[])
 
   // error sum for the MH-MC test
   double ratio;
+
+  // random number sorage for the MH-MC test
+  double randUniform;
 
   // storage for brownian bridge
   double *bb = calloc(NUMu,sizeof(double));
@@ -241,10 +289,10 @@ int main(int argc, char *argv[])
   printf("Number of Dimensions: %i \n",NUMDIM);
   printf("Number of Beads: %i \n",NUMBEAD);
   printf("Path grid: du = %+.8e \n", DU);
-  printf("Sampling Parameters: dt=%f \n",dt);
+  printf("Sampling Parameters: dt=%f \n",DT);
   printf("=======================================================\n");
-  printf("MD step: h=%+.8e \n",h);
-  printf("MD time (n*h): %+.8e \n",NUMMD*h);
+  printf("MD step: h=%+.8e \n",sqrt(2.0l * DT));
+  printf("MD time (n*h): %+.8e \n",NUMMD*sqrt(2.0l * DT));
   printf("=======================================================\n");
 
   //===============================================================
@@ -287,7 +335,6 @@ int main(int argc, char *argv[])
       exit(-1);
   }
 
-
   //===============================================================
   // GNU Scientific Library Random Number Setup
   //===============================================================
@@ -302,10 +349,7 @@ int main(int argc, char *argv[])
   printf("RNG Seed: %li \n", gsl_rng_default_seed);
   printf("=======================================================\n");
 
-  double randUniform;
-
-  renorm(savePos, DU, doubleNUMu);
-
+  renorm(savePos); //renormalize the position to have the correct thermal fluctuation
 
   // ==================================================================================
   //     Steepest Descent Loop for optimizing Tube Parameters
@@ -315,9 +359,9 @@ int main(int argc, char *argv[])
   {
     // Initialize the means and B for all configuration
     // These will not change in the HMC loop
-    initMeans(configCurrent, du);
-    initMeans(configOld, du);
-    initMeans(configNew, du);
+    initMeans(configCurrent);
+    initMeans(configOld);
+    initMeans(configNew);
  
     // ==================================================================================
     //     Start of HMC Loop (loops over Metropolis Hastings - MC steps)
@@ -346,23 +390,23 @@ int main(int argc, char *argv[])
       for(i=0;i<NUMBEAD;i++) {calcPotentials(configCurrent,i);}
   
       //calculate LinvG for the config
-      LInverse(configCurrent, doubleNUMl, du, vecdg, veci1, veci0);
+      LInverse(configCurrent, vecdg, veci1, veci0);
  
       //do the preconditioned form of the SPDE
-      preconditionSPDE(configCurrent, configNew, du, dt, doubleNUMu, bb, GaussRandArray, RanNumPointer);
+      preconditionSPDE(configCurrent, configNew, bb, GaussRandArray, RanNumPointer);
  
       //calculates potentials in config given the positions
       #pragma omp parallel for
       for(i=0;i<NUMBEAD;i++) {calcPotentials(configNew,i);}
  
       //calculate LinvG for the config
-      LInverse(configNew, doubleNUMl, du, vecdg, veci1, veci0);
+      LInverse(configNew, vecdg, veci1, veci0);
  
       //acc ratio of newconfig
-      ProbAccRatio(configCurrent, configNew, dt, du, &ratio);
+      ProbAccRatio(configCurrent, configNew, &ratio);
  
       //calculate the averages for the tubes estimator
-      accumulateAverages(tubeAve,configNew,&tau,dt);
+      accumulateAverages(tubeAve,configNew,&tau);
       accumulateArrayPlot(arrayPlot, configNew);
  
       printf("SPDE ratio: %+0.10f \n",ratio);
@@ -376,36 +420,27 @@ int main(int argc, char *argv[])
         rotateConfig(&configOld, &configCurrent, &configNew);
  
         //do the MD position update
-        MolecularDynamics(configOld, configCurrent, configNew, du, dt);
+        MolecularDynamics(configOld, configCurrent, configNew);
   
         //calculates potentials in config given the positions
         #pragma omp parallel for
         for(i=0;i<NUMBEAD;i++) {calcPotentials(configNew,i);}
  
         //calculate LinvG for the config
-        LInverse(configNew, doubleNUMl, du, vecdg, veci1, veci0);
+        LInverse(configNew, vecdg, veci1, veci0);
  
         //calculate the average distance moved in the step and print to std out
         if(MDloopi%WRITESTDOUT==0){
-          /*
-          printf("pos: %+0.5f   %+0.5f\n",configNew[100].pos[0],configNew[100].pos[1]);
-          printf("mean: %+0.5f   %+0.5f\n",configNew[100].posm[0],configNew[100].posm[1]);
-          printf("z: %+0.5f   %+0.5f\n",configNew[100].posz[0],configNew[100].posz[1]);
-          printf("B: %+0.5f   %+0.5f    %+0.15f\n",configNew[100].B[0],configNew[100].B[1],configNew[100].B[2]);
-          printf("Linv: %+0.5f   %+0.5f\n",configNew[100].LinvG[0],configNew[100].LinvG[1]);
-          */
  
-          printf("MDi: %.5d | MDi*h: %0.5f | MD ratio: %+0.5f | distance: ",MDloopi,MDloopi*sqrt(2*dt),ratio);
+          printf("MDi: %.5d | MDi*h: %0.5f | MD ratio: %+0.5f | distance: ",MDloopi,MDloopi*sqrt(2*DT),ratio); //newline is in printDistance function
           printDistance(configNew, savePos);
-          printf("BPARX1: %.5f | BPARX2: %.5f | BPARX3: %.5f \n",BPARX1,BPARX2,BPARX3);
         }
  
         //acc ratio of newconfig
-        ProbAccRatio(configCurrent, configNew, dt, du, &ratio);
-        //printf("%i  ProbAcc= %+.15e  QV Vel= %0.15e \n", MDloopi, ratio, qvvel);
+        ProbAccRatio(configCurrent, configNew, &ratio);
  
         //calculate the averages for the tubes estimator
-        accumulateAverages(tubeAve,configNew,&tau,dt);
+        accumulateAverages(tubeAve,configNew,&tau);
         //accumulateArrayPlot(arrayPlot, configNew);
       }
       // ==================================================================================
@@ -419,7 +454,7 @@ int main(int argc, char *argv[])
       else{
         rej++;
       }  //end MD loop
-      printf("rand=%+0.6f  Exp[ratio]=%+0.6f   dt= %+0.5e     acc= %i      rej= %i  \n",randUniform,exp(ratio/SIGMA2),dt,acc,rej);
+      printf("rand=%+0.6f  Exp[ratio]=%+0.6f   dt= %+0.5e     acc= %i      rej= %i  \n",randUniform,exp(ratio/SIGMA2),DT,acc,rej);
 
     }  //end MC loop
 
@@ -444,8 +479,6 @@ int main(int argc, char *argv[])
 
   return(0);
 }
-
-
 
 // ==================================================================================
 //     Function Declarations
@@ -479,7 +512,7 @@ void GenGaussRand(double GaussRand[NUMu], gsl_rng *RanNumPointer, double StdDev)
 }
 
 //============================================
-void generateBB(double bb[NUMBEAD], double du, double dt, double GaussRandArray[NUMu], gsl_rng *RanNumPointer)
+void generateBB(double bb[NUMBEAD], double GaussRandArray[NUMu], gsl_rng *RanNumPointer)
 //generate a Brownian bridge and store to bb
 {
   int n;
@@ -498,7 +531,7 @@ void generateBB(double bb[NUMBEAD], double du, double dt, double GaussRandArray[
   //  linenum++;}
   //****************************
 
-  sqdu=SIGMA*sqrt(du);
+  sqdu=sqrt(SIGMA2*DU);
   bb[0]=0.0l;
   for(n=1;n<NUMBEAD;n++)
   {
@@ -515,14 +548,14 @@ void generateBB(double bb[NUMBEAD], double du, double dt, double GaussRandArray[
 }
 
 // ============================================
-void renormBB(double bb[NUMBEAD], double du, double doubleNUMu)
+void renormBB(double bb[NUMBEAD])
 {
   int n;
   double endPtCorr;
   double sum, term, term0;
   double alpha;
 
-  endPtCorr=gsl_pow_int(bb[0]-bb[NUMBEAD-1],2)/doubleNUMu;
+  endPtCorr=gsl_pow_int(bb[0]-bb[NUMBEAD-1],2)/((double)(NUMu));
 
   sum=0.0l;
   #pragma omp parallel for reduction(+:sum)
@@ -531,8 +564,8 @@ void renormBB(double bb[NUMBEAD], double du, double doubleNUMu)
     sum+=gsl_pow_int(bb[n]-bb[n+1],2);
   }
 
-  alpha=sqrt((doubleNUMu*du*SIGMA2-endPtCorr)/(sum-endPtCorr));
-  term=(1.0l-alpha)*(bb[NUMBEAD-1]-bb[0])/doubleNUMu;
+  alpha=sqrt((((double)(NUMu))*DU*SIGMA2-endPtCorr)/(sum-endPtCorr));
+  term=(1.0l-alpha)*(bb[NUMBEAD-1]-bb[0])/((double)(NUMu));
   term0=(1.0l-alpha)*bb[0];
   //term and term0 have a subtraction of roughly equal numbers and thus is not very accurate
   // alpha is ~1 with an error of 10^-4 or 5 for sample configs. This makes the routine 
@@ -546,7 +579,7 @@ void renormBB(double bb[NUMBEAD], double du, double doubleNUMu)
 }
 
 // ============================================
-void renorm(position *currentpos, double du, double doubleNUMu)
+void renorm(position *currentpos)
 {
   long double alpha;
   double sum, term, term0; 
@@ -555,14 +588,14 @@ void renorm(position *currentpos, double du, double doubleNUMu)
 
   for(i=0;i<NUMDIM;i++)
   {
-    endPtCorr=gsl_pow_int(currentpos[0].pos[i]-currentpos[NUMBEAD-1].pos[i],2)/doubleNUMu;
+    endPtCorr=gsl_pow_int(currentpos[0].pos[i]-currentpos[NUMBEAD-1].pos[i],2)/((double)(NUMu));
     sum=0.0l;
     for(n=0;n<NUMu;n++)
     {
       sum+=gsl_pow_int(currentpos[n].pos[i]-currentpos[n+1].pos[i],2);
     }
-    alpha=sqrt((doubleNUMu*du*SIGMA2-endPtCorr)/(sum-endPtCorr));
-    term=(1.0L-alpha)*(currentpos[NUMBEAD-1].pos[i]-currentpos[0].pos[i])/doubleNUMu;
+    alpha=sqrt((((double)(NUMu))*DU*SIGMA2-endPtCorr)/(sum-endPtCorr));
+    term=(1.0L-alpha)*(currentpos[NUMBEAD-1].pos[i]-currentpos[0].pos[i])/((double)(NUMu));
     term0=(1.0L-alpha)*currentpos[0].pos[i];
     //term and term0 have a subtraction of roughly equal numbers and thus is not very accurate
     // alpha is ~1 with an error of 10^-4 or 5 for sample configs. This makes the routine 
@@ -587,11 +620,11 @@ void calcPotentials(config *currentConfig, int beadIndex)
 }
 
 //============================================
-void LInverse(config* currentConfig, double doubleNUMl, double du, double vecdg[NUMl], double veci1[NUMl], double veci0[NUMl])
+void LInverse(config* currentConfig, double vecdg[NUMl], double veci1[NUMl], double veci0[NUMl])
 {
   double lasti;
   int i,n;
-  double du2 = du*du;
+  double du2 = DU*DU;
 
 
   for(i=0;i<NUMDIM;i++)
@@ -621,7 +654,7 @@ void LInverse(config* currentConfig, double doubleNUMl, double du, double vecdg[
 }
 
 //============================================
-void preconditionSPDE(config* currentConfig, config* newConfig, double du, double dt, double doubleNUMu, double bb[NUMBEAD], double GaussRandArray[NUMu], gsl_rng *RanNumPointer)
+void preconditionSPDE(config* currentConfig, config* newConfig, double bb[NUMBEAD], double GaussRandArray[NUMu], gsl_rng *RanNumPointer)
 //generates a preconditioned step using the Stochastic Partial Differential Equation
 //currentConfig is the incoming configuration that has LinvG and GradG calculated
 //newConfig is a temp array that is used to make all of the calsulations without touching currentConfig.pos[*][*]
@@ -632,7 +665,7 @@ void preconditionSPDE(config* currentConfig, config* newConfig, double du, doubl
   double qvpos = 0.0l;
   int i,n;
 
-  double h=sqrt(2.0l * dt);
+  double h=sqrt(2.0l * DT);
   double co=(4.0l-h*h)/(4.0l+h*h);
   double si=(4.0l*h)/(4.0l+h*h); //(h/2)*si
   double hOverTwoSi=(2.0l*h*h)/(4.0l+h*h); //(h/2)*si
@@ -642,7 +675,7 @@ void preconditionSPDE(config* currentConfig, config* newConfig, double du, doubl
 
   for(i=0;i<NUMDIM;i++)
   {
-    generateBB(bb, du, dt, GaussRandArray, RanNumPointer);
+    generateBB(bb, GaussRandArray, RanNumPointer);
     //need to make the bb orthogonal to pos without the linear term
     //store pos w/o linear term in newconfig.pos temporarily
     #pragma omp parallel for
@@ -664,7 +697,7 @@ void preconditionSPDE(config* currentConfig, config* newConfig, double du, doubl
     #pragma omp parallel for
     for(n=0;n<NUMBEAD;n++){ bb[n]=bb[n]-alpha*newConfig[n].pos[i];}
 
-    renormBB(bb, du, doubleNUMu);
+    renormBB(bb);
 
     #pragma omp parallel for
     for(n=0;n<NUMBEAD;n++){
@@ -680,19 +713,19 @@ void preconditionSPDE(config* currentConfig, config* newConfig, double du, doubl
   }
 
   //print the quadratic variation 
-  qvvel *= 0.5/(2.0l*du*((double)(NUMBEAD-1)));
-  qvpos *= 0.5/(2.0l*du*((double)(NUMBEAD-1)));
+  qvvel *= 0.5/(2.0l*DU*((double)(NUMBEAD-1)));
+  qvpos *= 0.5/(2.0l*DU*((double)(NUMBEAD-1)));
   printf("qvvel=%0.10f      qvpos=%0.10f \n",qvvel,qvpos);
 
 }
 
 //============================================
-void MolecularDynamics(config *oldConfig, config *currentConfig, config *newConfig, double du, double dt)
+void MolecularDynamics(config *oldConfig, config *currentConfig, config *newConfig)
 // perform the MD step
 {
 
   int i,n;
-  double h=sqrt(2.0l*dt);
+  double h=sqrt(2.0l*DT);
   double co=(4.0-h*h)/(4.0l+h*h);
   double si=sqrt(1.0l-co*co);
   double twoCosMinusOne = 2.0l*co-1.0l;
@@ -707,7 +740,7 @@ void MolecularDynamics(config *oldConfig, config *currentConfig, config *newConf
 }
 
 //============================================
-void ProbAccRatio(config *currentConfig, config *newConfig, double dt, double du, double *ratio)
+void ProbAccRatio(config *currentConfig, config *newConfig, double *ratio)
 // calculate the probability accaptance ratio for the step
 {
 
@@ -718,7 +751,7 @@ void ProbAccRatio(config *currentConfig, config *newConfig, double dt, double du
   double l1h4, l1hh16, l2;
   int n;
 
-  double h=sqrt(2.0l*dt);
+  double h=sqrt(2.0l*DT);
   //double co=(4.0l-(h*h))/(4.0l+(h*h));
   //double si=sqrt(1.0l-(co*co));
   double cot=(4.0l-h*h)/(4.0l*h);
@@ -740,7 +773,7 @@ void ProbAccRatio(config *currentConfig, config *newConfig, double dt, double du
   l1hh16*=h*h*0.0625l;
   l2*=0.5l;
 
-  *ratio+=du*(l1h4+l1hh16+l2);
+  *ratio+=DU*(l1h4+l1hh16+l2);
 }
 
 // ============================== Utility functions =================================
@@ -904,13 +937,13 @@ void zeroAverages(averages *tubeAve, int *tau)
 }
 
 // ============================================
-void initMeans(config *currentConfig, double du)
+void initMeans(config *currentConfig)
 //initializes the means and B 
 {
   int n;
   double dun;
   for(n=0;n<NUMBEAD;n++){
-    dun=du*((double)(n));
+    dun=DU*((double)(n));
     currentConfig[n].posm[0]=meanxFunc(dun);
     currentConfig[n].posm[1]=meanyFunc(dun);
     currentConfig[n].posdm[0]=dmeanxFunc(dun);
@@ -924,7 +957,7 @@ void initMeans(config *currentConfig, double du)
 }
 
 //============================================
-void accumulateAverages(averages *tubeAve, config *newConfig, int *tau, double dt)
+void accumulateAverages(averages *tubeAve, config *newConfig, int *tau)
 {
   int n;
   double I, Iou, ImIou;
@@ -943,9 +976,9 @@ void accumulateAverages(averages *tubeAve, config *newConfig, int *tau, double d
     Fy=-2.0*newConfig[n].pos[1];
     ddVy=2.0;
 
-    I+=dt*(0.5*(Fx*Fx+Fy*Fy)-TEMP*(ddVx+ddVy));
+    I+=DT*(0.5*(Fx*Fx+Fy*Fy)-TEMP*(ddVx+ddVy));
 
-    Iou+=dt*newConfig[n].G;
+    Iou+=DT*newConfig[n].G;
   }
 
   ImIou=I-Iou;
@@ -1055,4 +1088,3 @@ void writeArrayPlot(int arrayPlot[300][200], int MCloopi)
   }
   fclose(pWritePos);
 }
-
