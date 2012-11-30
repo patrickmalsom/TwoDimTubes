@@ -1007,7 +1007,7 @@ void tubesSteepestDescent(averages *tubeAve)
   double tempBparx1=0.0;
   double tempBparx2=0.0;
   double tempBparx3=0.0;
-  double gammaDescent=0.001;
+  double gammaDescent=0.1;
   double dun;
 
   for(n=0;n<NUMBEAD;n++)
