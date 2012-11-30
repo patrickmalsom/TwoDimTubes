@@ -61,8 +61,8 @@ const char PotentialString[]="2WellTubes";// Potential Description
 #define BxyFunc(t)        0.0
 
 //derivatives wrt the parameters
-#define meanxDParx1(t)    MPARX2*(-5.0+t)/tanh(5.0*MPARX1)*pow(1.0/cosh(MPARX1*(-5.0+t)),2.0)-5.0*MPARX2*pow(1.0/sinh(5.0*MPARX1),2.0)*tanh(MPARX1*(-5.0+t))
-#define meanxDParx2(t)    tanh(MPARX1*(-5.0+t))/tanh(5.0*MPARX1)
+#define meanxDParx1Func(t)    MPARX2*(-5.0+t)/tanh(5.0*MPARX1)*pow(1.0/cosh(MPARX1*(-5.0+t)),2.0)-5.0*MPARX2*pow(1.0/sinh(5.0*MPARX1),2.0)*tanh(MPARX1*(-5.0+t))
+#define meanxDParx2Func(t)    tanh(MPARX1*(-5.0+t))/tanh(5.0*MPARX1)
 #define BxxDParx1Func(t)  -2*(BPARX2-BPARX3)*(BPARX3+(BPARX2-BPARX3)*exp(-BPARX1*pow(-5.+t,2)))*pow(-5.+t,2)*exp(-BPARX1*pow(-5.+t,2))
 #define BxxDParx2Func(t)  2*exp(-BPARX1*pow(-5.+t,2))*(BPARX3+(BPARX2-BPARX3)*exp(-BPARX1*pow(-5.+t,2)))
 #define BxxDParx3Func(t)  2*(1-exp(-BPARX1*pow(-5.+t,2)))*(BPARX3+(BPARX2-BPARX3)*exp(-BPARX1*pow(-5.+t,2)))
@@ -1002,6 +1002,8 @@ void tubesSteepestDescent(averages *tubeAve)
 //passes a new set of parameters for the smooth functions defined in constants.h
 {
   int n;
+  double tempMparx1=0.0;
+  double tempMparx2=0.0;
   double tempBparx1=0.0;
   double tempBparx2=0.0;
   double tempBparx3=0.0;
@@ -1011,12 +1013,19 @@ void tubesSteepestDescent(averages *tubeAve)
   for(n=0;n<NUMBEAD;n++)
   {
     dun=DU*((double)(n));
+    //mean integration
+    tempMparx1+= meanxDParx1Func(dun)*(tubeAve[n].mean[2]);
+    tempMparx2+= meanxDParx2Func(dun)*(tubeAve[n].mean[3]);
+    //B integration 
     tempBparx1+= BxxDParx1Func(dun)*(tubeAve[n].meanB[3]-tubeAve[n].meanB[6]*tubeAve[n].meanB[9]);
     tempBparx2+= BxxDParx2Func(dun)*(tubeAve[n].meanB[3]-tubeAve[n].meanB[6]*tubeAve[n].meanB[9]);
     tempBparx3+= BxxDParx3Func(dun)*(tubeAve[n].meanB[3]-tubeAve[n].meanB[6]*tubeAve[n].meanB[9]);
   }
 
-  BPARX1= BPARX1-100.*gammaDescent*tempBparx1/((double)(NUMBEAD));
+  //Steepest Descent: newp = oldp - gamma * Del Function
+  MPARX1= MPARX1-gammaDescent*tempMparx1/((double)(NUMBEAD));
+  MPARX2= MPARX2-gammaDescent*tempMparx2/((double)(NUMBEAD));
+  BPARX1= BPARX1-gammaDescent*tempBparx1/((double)(NUMBEAD));
   BPARX2= BPARX2-gammaDescent*tempBparx2/((double)(NUMBEAD));
   BPARX3= BPARX3-gammaDescent*tempBparx3/((double)(NUMBEAD));
 }
