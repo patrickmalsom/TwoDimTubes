@@ -50,18 +50,20 @@ const char PotentialString[]="2WellTubes";// Potential Description
 //=============================================================================
 
 // Smooth functions for use in Tubes HMC
-#define meanxFunc(t)    MPARX2/tanh(5*MPARX1)*tanh(MPARX1*(-5 + t))
-#define meanyFunc(t)    0.0
-#define dmeanxFunc(t)   MPARX1*MPARX2/tanh(5*MPARX1)*pow(cosh(MPARX1*(-5 + t)),-2.0)
-#define dmeanyFunc(t)   0.0
-#define ddmeanxFunc(t)  -2*pow(MPARX1,2.0)*MPARX2/tanh(5*MPARX1)*pow(cosh(MPARX1*(-5+t)),-2.0)*tanh(MPARX1*(-5+t))
-#define ddmeanyFunc(t)  0.0
-#define BxxFunc(t)      pow(BPARX1+(BPARX2-BPARX1)*exp(-BPARX3*pow(-5.+t,2)),2.0)
-#define ByyFunc(t)      4.0
-#define BxyFunc(t)      0.0
+#define meanxFunc(t)      MPARX2/tanh(5*MPARX1)*tanh(MPARX1*(-5+t))
+#define meanyFunc(t)      0.0
+#define dmeanxFunc(t)     MPARX1*MPARX2/tanh(5*MPARX1)*pow(cosh(MPARX1*(-5+t)),-2.0)
+#define dmeanyFunc(t)     0.0
+#define ddmeanxFunc(t)    -2*pow(MPARX1,2.0)*MPARX2/tanh(5*MPARX1)*pow(cosh(MPARX1*(-5+t)),-2.0)*tanh(MPARX1*(-5+t))
+#define ddmeanyFunc(t)    0.0
+#define BxxFunc(t)        pow(BPARX1+(BPARX2-BPARX1)*exp(-BPARX3*pow(-5.+t,2)),2.0)
+#define ByyFunc(t)        4.0
+#define BxyFunc(t)        0.0
 
 //derivatives wrt the parameters
-#define BxxDParx1Func(t)  -2*(BPARX2 - BPARX3) * (BPARX3 + (BPARX2 - BPARX3)*exp(-BPARX1*pow(-5. + t,2))) *pow(-5. + t,2) * exp(-BPARX1*pow(-5. + t,2))
+#define meanxDParx1(t)    MPARX2*(-5.0+t)/tanh(5.0*MPARX1)*pow(1.0/cosh(MPARX1*(-5.0+t)),2.0)-5.0*MPARX2*pow(1.0/sinh(5.0*MPARX1),2.0)*tanh(MPARX1*(-5.0+t))
+#define meanxDParx2(t)    tanh(MPARX1*(-5.0+t))/tanh(5.0*MPARX1)
+#define BxxDParx1Func(t)  -2*(BPARX2-BPARX3)*(BPARX3+(BPARX2-BPARX3)*exp(-BPARX1*pow(-5.+t,2)))*pow(-5.+t,2)*exp(-BPARX1*pow(-5.+t,2))
 #define BxxDParx2Func(t)  2*exp(-BPARX1*pow(-5.+t,2))*(BPARX3+(BPARX2-BPARX3)*exp(-BPARX1*pow(-5.+t,2)))
 #define BxxDParx3Func(t)  2*(1-exp(-BPARX1*pow(-5.+t,2)))*(BPARX3+(BPARX2-BPARX3)*exp(-BPARX1*pow(-5.+t,2)))
 
@@ -75,12 +77,12 @@ const double DT=PREDT*DU*DU;
 const double SIGMA2=2.0*TEMP;
 
 // Initial Parameters for the means. To be optimized using KL gradient descent.
-double MPARX1 = 0.97;
-double MPARX2 = 2.00;
+double MPARX1 = 2.00;
+double MPARX2 = 0.97;
 
-double BPARX1 = 7.5;
-double BPARX2 = 0.42;
-double BPARX3 = 5.50;
+double BPARX1 = 7.52;
+double BPARX2 = 0.40;
+double BPARX3 = 5.20;
 
 // ==================================================================================
 // Structure Definitions
