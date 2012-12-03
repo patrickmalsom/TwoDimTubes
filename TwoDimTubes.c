@@ -26,19 +26,19 @@
 #define NUMDIM    2           // Spacial Dimensions
 #define NUMBEAD   20001       // Path Points
 #define DU        0.0005      // path time step size
-#define PREDT     200.0       // DT=PreDT*DU^2 (path time)
+#define PREDT     1000.0       // DT=PreDT*DU^2 (path time)
 
 // Temperature Definition
 #define TEMP      0.15
 
 // Incrimenter Definitions
-#define NUMMD     30        // Number of MD steps 
+#define NUMMD     50        // Number of MD steps 
 //      NUMMD     ~3/(2*sqrt(2*PreDT*DU^2)) <- Approx optimal value of NUMMD
 #define NUMMC     1000      // Number of Metropolis Hastings MC steps
 #define NUMTUBE   100        // Number of tube steepest descent steps
 
 // Constants for writing to stdout and config
-#define WRITESTDOUT  30       // How often to print to stdout (# of MD loops)
+#define WRITESTDOUT  50       // How often to print to stdout (# of MD loops)
 //current implimentation writes a file at every steepest descent step
 const char PotentialString[]="2WellTubes";// Potential Description 
 
@@ -1016,7 +1016,7 @@ void tubesSteepestDescent(averages *tubeAve)
   double tempBparx1=0.0;
   double tempBparx2=0.0;
   double tempBparx3=0.0;
-  double gammaDescent=0.1;
+  double gammaDescent=2.0;
   double dun;
 
   for(n=0;n<NUMBEAD;n++)
@@ -1032,8 +1032,8 @@ void tubesSteepestDescent(averages *tubeAve)
   }
 
   //Steepest Descent: newp = oldp - gamma * Del Function
-  MPARX1= MPARX1-gammaDescent*tempMparx1/((double)(NUMBEAD));
-  MPARX2= MPARX2-gammaDescent*tempMparx2/((double)(NUMBEAD));
+  MPARX1= MPARX1-10000.0*gammaDescent*tempMparx1/((double)(NUMBEAD));
+  MPARX2= MPARX2-0.1*gammaDescent*tempMparx2/((double)(NUMBEAD));
   BPARX1= BPARX1-gammaDescent*tempBparx1/((double)(NUMBEAD));
   BPARX2= BPARX2-gammaDescent*tempBparx2/((double)(NUMBEAD));
   BPARX3= BPARX3-gammaDescent*tempBparx3/((double)(NUMBEAD));
