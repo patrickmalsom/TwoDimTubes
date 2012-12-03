@@ -84,6 +84,8 @@ double BPARX1 = 7.52;
 double BPARX2 = 0.40;
 double BPARX3 = 5.20;
 
+FILE *pStdOut;
+
 // ==================================================================================
 // Structure Definitions
 // ==================================================================================
@@ -220,6 +222,10 @@ int main(int argc, char *argv[])
 { 
   setbuf(stdout,NULL);  //allows a pipe to from stdout to file
 
+  //file name for writing std out
+  pStdOut= fopen("StdOut.dat","w");
+  setbuf(pStdOut,NULL);  //write to file immediatley
+
   //===============================================================
   // Declare variables and print to std output for reference
   //===============================================================
@@ -336,6 +342,7 @@ int main(int argc, char *argv[])
   //     Steepest Descent Loop for optimizing Tube Parameters
   // ==================================================================================
 
+  printf("MPARX1:%.5f, MPARX2:%.5f, BPARX1:%.5f, BPARX2:%.5f, BPARX3:%.5f \n",MPARX1,MPARX2,BPARX1,BPARX2,BPARX3);
   for(tubeloopi=1; tubeloopi<=NUMTUBE+1; tubeloopi++)
   {
     // Initialize the means and B for all configuration
@@ -348,8 +355,8 @@ int main(int argc, char *argv[])
     //     Start of HMC Loop (loops over Metropolis Hastings - MC steps)
     // ==================================================================================
  
-    printf("START Hybrid Monte Carlo MAIN LOOP\n");
-    printf("=======================================================\n");
+    fprintf(pStdOut,"START Hybrid Monte Carlo MAIN LOOP\n");
+    fprintf(pStdOut,"=======================================================\n");
     acc=0;
     rej=0;
     zeroAverages(tubeAve,&tau);
@@ -389,7 +396,7 @@ int main(int argc, char *argv[])
       //calculate the averages for the tubes estimator
       accumulateAverages(tubeAve,configNew,&tau);
  
-      printf("SPDE ratio: %+0.10f \n",ratio);
+      fprintf(pStdOut,"SPDE ratio: %+0.10f \n",ratio);
       // ==================================================================================
       //     Start of MD Loop: This loop needs to be focused on for parallelization
       // ==================================================================================
@@ -412,7 +419,7 @@ int main(int argc, char *argv[])
         //calculate the average distance moved in the step and print to std out
         if(MDloopi%WRITESTDOUT==0){
  
-          printf("MDi: %.5d | MDi*h: %0.5f | MD ratio: %+0.5f | distance: ",MDloopi,MDloopi*sqrt(2*DT),ratio); //newline is in printDistance function
+          fprintf(pStdOut,"MDi: %.5d | MDi*h: %0.5f | MD ratio: %+0.5f | distance: ",MDloopi,MDloopi*sqrt(2*DT),ratio); //newline is in printDistance function
           printDistance(configNew, savePos);
         }
  
@@ -433,7 +440,7 @@ int main(int argc, char *argv[])
       else{
         rej++;
       }  //end MD loop
-      printf("rand=%+0.6f  Exp[ratio]=%+0.6f   dt= %+0.5e     acc= %i      rej= %i  \n",randUniform,exp(ratio/SIGMA2),DT,acc,rej);
+      fprintf(pStdOut,"rand=%+0.6f  Exp[ratio]=%+0.6f   dt= %+0.5e     acc= %i      rej= %i  \n",randUniform,exp(ratio/SIGMA2),DT,acc,rej);
 
     }  //end MC loop
 
@@ -445,10 +452,12 @@ int main(int argc, char *argv[])
     writeConfig(configNew,tubeAve,MCloopi);
     zeroAverages(tubeAve,&tau);
  
+    printf("MPARX1:%.5f, MPARX2:%.5f, BPARX1:%.5f, BPARX2:%.5f, BPARX3:%.5f \n",MPARX1,MPARX2,BPARX1,BPARX2,BPARX3);
   }  //end tube gradient descent loop
 
-  // GSL random number generator release memory
+  // GSL random number generator release memory and close files
   gsl_rng_free (RanNumPointer);
+  fclose(pStdOut);
 
   return(0);
 }
@@ -688,7 +697,7 @@ void preconditionSPDE(config* currentConfig, config* newConfig, double bb[NUMBEA
   //print the quadratic variation 
   qvvel *= 0.5/(2.0l*DU*((double)(NUMBEAD-1)));
   qvpos *= 0.5/(2.0l*DU*((double)(NUMBEAD-1)));
-  printf("qvvel=%0.10f      qvpos=%0.10f \n",qvvel,qvpos);
+  fprintf(pStdOut,"qvvel=%0.10f      qvpos=%0.10f \n",qvvel,qvpos);
 
 }
 
@@ -885,7 +894,7 @@ void printDistance(config *newConfig, position *savePos)
       tempSum+=gsl_pow_int(newConfig[n].pos[i]-savePos[n].pos[i],2);
     }
   }
-  printf("%+.10f \n",tempSum/(NUMBEAD-2));
+  fprintf(pStdOut,"%+.10f \n",tempSum/(NUMBEAD-2));
 
 }
 
