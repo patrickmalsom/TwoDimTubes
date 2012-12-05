@@ -50,22 +50,22 @@ const char PotentialString[]="2WellTubes";// Potential Description
 //=============================================================================
 
 // Smooth functions for use in Tubes HMC
-#define meanxFunc(t)      MPARX2/tanh(5*MPARX1)*tanh(MPARX1*(-5+t))
+#define meanxFunc(t)      MU2/tanh(5*MU1)*tanh(MU1*(-5+t))
 #define meanyFunc(t)      0.0
-#define dmeanxFunc(t)     MPARX1*MPARX2/tanh(5*MPARX1)*pow(cosh(MPARX1*(-5+t)),-2.0)
+#define dmeanxFunc(t)     MU1*MU2/tanh(5*MU1)*pow(cosh(MU1*(-5+t)),-2.0)
 #define dmeanyFunc(t)     0.0
-#define ddmeanxFunc(t)    -2*pow(MPARX1,2.0)*MPARX2/tanh(5*MPARX1)*pow(cosh(MPARX1*(-5+t)),-2.0)*tanh(MPARX1*(-5+t))
+#define ddmeanxFunc(t)    -2*pow(MU1,2.0)*MU2/tanh(5*MU1)*pow(cosh(MU1*(-5+t)),-2.0)*tanh(MU1*(-5+t))
 #define ddmeanyFunc(t)    0.0
-#define BxxFunc(t)        pow(BPARX1+(BPARX2-BPARX1)*exp(-BPARX3*pow(-5.+t,2)),2.0)
+#define BxxFunc(t)        pow(SIGMA1+(SIGMA2-SIGMA1)*exp(-SIGMA3*pow(-5.+t,2)),2.0)
 #define ByyFunc(t)        4.0
 #define BxyFunc(t)        0.0
 
 //derivatives wrt the parameters
-#define meanxDParx1Func(t)    MPARX2*(-5.0+t)/tanh(5.0*MPARX1)*pow(1.0/cosh(MPARX1*(-5.0+t)),2.0)-5.0*MPARX2*pow(1.0/sinh(5.0*MPARX1),2.0)*tanh(MPARX1*(-5.0+t))
-#define meanxDParx2Func(t)    tanh(MPARX1*(-5.0+t))/tanh(5.0*MPARX1)
-#define BxxDParx1Func(t)  -2*(BPARX2-BPARX3)*(BPARX3+(BPARX2-BPARX3)*exp(-BPARX1*pow(-5.+t,2)))*pow(-5.+t,2)*exp(-BPARX1*pow(-5.+t,2))
-#define BxxDParx2Func(t)  2*exp(-BPARX1*pow(-5.+t,2))*(BPARX3+(BPARX2-BPARX3)*exp(-BPARX1*pow(-5.+t,2)))
-#define BxxDParx3Func(t)  2*(1-exp(-BPARX1*pow(-5.+t,2)))*(BPARX3+(BPARX2-BPARX3)*exp(-BPARX1*pow(-5.+t,2)))
+#define meanxDParx1Func(t)    MU2*(-5.0+t)/tanh(5.0*MU1)*pow(1.0/cosh(MU1*(-5.0+t)),2.0)-5.0*MU2*pow(1.0/sinh(5.0*MU1),2.0)*tanh(MU1*(-5.0+t))
+#define meanxDParx2Func(t)    tanh(MU1*(-5.0+t))/tanh(5.0*MU1)
+#define BxxDParx1Func(t)  -2*(SIGMA2-SIGMA3)*(SIGMA3+(SIGMA2-SIGMA3)*exp(-SIGMA1*pow(-5.+t,2)))*pow(-5.+t,2)*exp(-SIGMA1*pow(-5.+t,2))
+#define BxxDParx2Func(t)  2*exp(-SIGMA1*pow(-5.+t,2))*(SIGMA3+(SIGMA2-SIGMA3)*exp(-SIGMA1*pow(-5.+t,2)))
+#define BxxDParx3Func(t)  2*(1-exp(-SIGMA1*pow(-5.+t,2)))*(SIGMA3+(SIGMA2-SIGMA3)*exp(-SIGMA1*pow(-5.+t,2)))
 
 //=============================================================================
 //                   Global Variables
@@ -74,15 +74,14 @@ const int NUMu=NUMBEAD-1;  //num of DU's
 const int NUMl=NUMBEAD-2;  //used in Linverse function
 
 const double DT=PREDT*DU*DU;
-const double SIGMA2=2.0*TEMP;
 
 // Initial Parameters for the means. To be optimized using KL gradient descent.
-double MPARX1 = 2.00;
-double MPARX2 = 0.97;
+double MU1 = 2.00; // steepness of the transition
+double MU2 = 0.97; // well location at finite temp
 
-double BPARX1 = 7.52;
-double BPARX2 = 0.40;
-double BPARX3 = 5.20;
+double SIGMA1 = 7.52; // approx well hessian
+double SIGMA2 = 0.40;
+double SIGMA3 = 5.20;
 
 FILE *pStdOut;
 
@@ -342,7 +341,7 @@ int main(int argc, char *argv[])
   //     Steepest Descent Loop for optimizing Tube Parameters
   // ==================================================================================
 
-  printf("MPARX1:%.5f, MPARX2:%.5f, BPARX1:%.5f, BPARX2:%.5f, BPARX3:%.5f \n",MPARX1,MPARX2,BPARX1,BPARX2,BPARX3);
+  printf("MU1:%.5f, MU2:%.5f, SIGMA1:%.5f, SIGMA2:%.5f, SIGMA3:%.5f \n",MU1,MU2,SIGMA1,SIGMA2,SIGMA3);
   for(tubeloopi=1; tubeloopi<=NUMTUBE+1; tubeloopi++)
   {
     // Initialize the means and B for all configuration
@@ -433,14 +432,14 @@ int main(int argc, char *argv[])
       //Metropolis Hastings Monte-Carlo test
       // ==================================================================================
       randUniform = gsl_rng_uniform(RanNumPointer);
-      if( exp(ratio/SIGMA2) > randUniform ){
+      if( exp(ratio/(2.0*TEMP)) > randUniform ){
         acc++;
         saveConfigtoPos(configNew, savePos);
       }
       else{
         rej++;
       }  //end MD loop
-      fprintf(pStdOut,"rand=%+0.6f  Exp[ratio]=%+0.6f   dt= %+0.5e     acc= %i      rej= %i  \n",randUniform,exp(ratio/SIGMA2),DT,acc,rej);
+      fprintf(pStdOut,"rand=%+0.6f  Exp[ratio]=%+0.6f   dt= %+0.5e     acc= %i      rej= %i  \n",randUniform,exp(ratio/(2.0*TEMP)),DT,acc,rej);
 
     }  //end MC loop
 
@@ -452,7 +451,7 @@ int main(int argc, char *argv[])
     writeConfig(configNew,tubeAve,MCloopi);
     zeroAverages(tubeAve,&tau);
  
-    printf("MPARX1:%.5f, MPARX2:%.5f, BPARX1:%.5f, BPARX2:%.5f, BPARX3:%.5f \n",MPARX1,MPARX2,BPARX1,BPARX2,BPARX3);
+    printf("MU1:%.5f, MU2:%.5f, SIGMA1:%.5f, SIGMA2:%.5f, SIGMA3:%.5f \n",MU1,MU2,SIGMA1,SIGMA2,SIGMA3);
   }  //end tube gradient descent loop
 
   // GSL random number generator release memory and close files
@@ -513,7 +512,7 @@ void generateBB(double bb[NUMBEAD], double GaussRandArray[NUMu], gsl_rng *RanNum
   //  linenum++;}
   //****************************
 
-  sqdu=sqrt(SIGMA2*DU);
+  sqdu=sqrt((2.0*TEMP)*DU);
   bb[0]=0.0l;
   for(n=1;n<NUMBEAD;n++)
   {
@@ -546,7 +545,7 @@ void renormBB(double bb[NUMBEAD])
     sum+=gsl_pow_int(bb[n]-bb[n+1],2);
   }
 
-  alpha=sqrt((((double)(NUMu))*DU*SIGMA2-endPtCorr)/(sum-endPtCorr));
+  alpha=sqrt((((double)(NUMu))*DU*(2.0*TEMP)-endPtCorr)/(sum-endPtCorr));
   term=(1.0l-alpha)*(bb[NUMBEAD-1]-bb[0])/((double)(NUMu));
   term0=(1.0l-alpha)*bb[0];
   //term and term0 have a subtraction of roughly equal numbers and thus is not very accurate
@@ -576,7 +575,7 @@ void renorm(position *currentpos)
     {
       sum+=gsl_pow_int(currentpos[n].pos[i]-currentpos[n+1].pos[i],2);
     }
-    alpha=sqrt((((double)(NUMu))*DU*SIGMA2-endPtCorr)/(sum-endPtCorr));
+    alpha=sqrt((((double)(NUMu))*DU*(2.0*TEMP)-endPtCorr)/(sum-endPtCorr));
     term=(1.0L-alpha)*(currentpos[NUMBEAD-1].pos[i]-currentpos[0].pos[i])/((double)(NUMu));
     term0=(1.0L-alpha)*currentpos[0].pos[i];
     //term and term0 have a subtraction of roughly equal numbers and thus is not very accurate
@@ -811,7 +810,7 @@ void writeConfig(config *newConfig, averages *tubeAve, int MCloopi)
   char filename[80];
   int i,n;
 
-  sprintf(filename,"%s-T%.2f-pos%07d-h0%.5f-b%.5f-a%.5f.dat",PotentialString,TEMP,MCloopi,BPARX1,BPARX2,BPARX3);
+  sprintf(filename,"%s-T%.2f-pos%07d-h0%.5f-b%.5f-a%.5f.dat",PotentialString,TEMP,MCloopi,SIGMA1,SIGMA2,SIGMA3);
   FILE * pWritePos;
   pWritePos = fopen(filename,"w");
   for(n=0;n<NUMBEAD;n++){
@@ -1011,11 +1010,11 @@ void tubesSteepestDescent(averages *tubeAve)
 //passes a new set of parameters for the smooth functions defined in constants.h
 {
   int n;
-  double tempMparx1=0.0;
-  double tempMparx2=0.0;
-  double tempBparx1=0.0;
-  double tempBparx2=0.0;
-  double tempBparx3=0.0;
+  double tempMU1=0.0;
+  double tempMU2=0.0;
+  double tempSIGMA1=0.0;
+  double tempSIGMA2=0.0;
+  double tempSIGMA3=0.0;
   double gammaDescent=2.0;
   double dun;
 
@@ -1023,18 +1022,18 @@ void tubesSteepestDescent(averages *tubeAve)
   {
     dun=DU*((double)(n));
     //mean integration
-    tempMparx1+= meanxDParx1Func(dun)*(tubeAve[n].mean[2]);
-    tempMparx2+= meanxDParx2Func(dun)*(tubeAve[n].mean[3]);
+    tempMU1+= meanxDParx1Func(dun)*(tubeAve[n].mean[2]);
+    tempMU2+= meanxDParx2Func(dun)*(tubeAve[n].mean[3]);
     //B integration 
-    tempBparx1+= BxxDParx1Func(dun)*(tubeAve[n].meanB[3]-tubeAve[n].meanB[6]*tubeAve[n].meanB[9]);
-    tempBparx2+= BxxDParx2Func(dun)*(tubeAve[n].meanB[3]-tubeAve[n].meanB[6]*tubeAve[n].meanB[9]);
-    tempBparx3+= BxxDParx3Func(dun)*(tubeAve[n].meanB[3]-tubeAve[n].meanB[6]*tubeAve[n].meanB[9]);
+    tempSIGMA1+= BxxDParx1Func(dun)*(tubeAve[n].meanB[3]-tubeAve[n].meanB[6]*tubeAve[n].meanB[9]);
+    tempSIGMA2+= BxxDParx2Func(dun)*(tubeAve[n].meanB[3]-tubeAve[n].meanB[6]*tubeAve[n].meanB[9]);
+    tempSIGMA3+= BxxDParx3Func(dun)*(tubeAve[n].meanB[3]-tubeAve[n].meanB[6]*tubeAve[n].meanB[9]);
   }
 
   //Steepest Descent: newp = oldp - gamma * Del Function
-  MPARX1= MPARX1-10000.0*gammaDescent*tempMparx1/((double)(NUMBEAD));
-  MPARX2= MPARX2-0.1*gammaDescent*tempMparx2/((double)(NUMBEAD));
-  BPARX1= BPARX1-gammaDescent*tempBparx1/((double)(NUMBEAD));
-  BPARX2= BPARX2-gammaDescent*tempBparx2/((double)(NUMBEAD));
-  BPARX3= BPARX3-gammaDescent*tempBparx3/((double)(NUMBEAD));
+  MU1= MU1-10000.0*gammaDescent*tempMU1/((double)(NUMBEAD));
+  MU2= MU2-0.1*gammaDescent*tempMU2/((double)(NUMBEAD));
+  SIGMA1= SIGMA1-gammaDescent*tempSIGMA1/((double)(NUMBEAD));
+  SIGMA2= SIGMA2-gammaDescent*tempSIGMA2/((double)(NUMBEAD));
+  SIGMA3= SIGMA3-gammaDescent*tempSIGMA3/((double)(NUMBEAD));
 }
