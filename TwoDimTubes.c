@@ -1016,7 +1016,7 @@ void normalizeAverages(averages *tubeAve, int *tau)
     }
     for(m=0;m<5;m++){
       //store the total derivative in the 0th array slot. saves dD/dm or dD/dB in the 0th slot
-      tubeAve[n].Deriv[m][0] = -1.0/(2.0*TEMP)*(tubeAve[n].Deriv[m][0]*oneOverTau - tubeAve[n].Deriv[m][1]*oneOverTau * tubeAve[n].Deriv[m][1]*oneOverTau); 
+      tubeAve[n].Deriv[m][0] = -1.0/(2.0*TEMP)*(tubeAve[n].Deriv[m][0]*oneOverTau - tubeAve[n].Deriv[m][1]*oneOverTau * tubeAve[n].Deriv[m][2]*oneOverTau); 
     }
   }
 }
