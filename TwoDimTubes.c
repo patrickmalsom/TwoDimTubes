@@ -34,8 +34,8 @@
 // Incrimenter Definitions
 #define NUMMD     50        // Number of MD steps 
 //      NUMMD     ~3/(2*sqrt(2*PreDT*DU^2)) <- Approx optimal value of NUMMD
-#define NUMMC     1000      // Number of Metropolis Hastings MC steps
-#define NUMTUBE   100        // Number of tube steepest descent steps
+#define NUMMC     500      // Number of Metropolis Hastings MC steps
+#define NUMTUBE   10        // Number of tube steepest descent steps
 
 // Constants for writing to stdout and config
 #define WRITESTDOUT  50       // How often to print to stdout (# of MD loops)
@@ -98,8 +98,9 @@ typedef struct _position
 //Stores the KL distance expectation values
 typedef struct _averages
 {
-  double mean[4];
-  double meanB[10];
+  double mean[2];
+  double meanB[3];
+  double Deriv[5][3];
 } averages;
 
 //Stores positions and all potentials
@@ -176,7 +177,7 @@ void savePostoConfig(position *currentpos, config *saveConfig);
 //copies ONLY pos elements of currentpos to saveConfig
 //leaves currentpos unmodified.
 
-void writeConfig(config *newConfig, averages *tubeAve, int MCloopi);
+void writeConfig(config *newConfig, averages *tubeAve, int MCloopi, int tubeloopi);
 //write the config to file with name position******.dat where ****** is MCloopi
 //writes the positions and the tube averages
 //only writes the iterations in constants.h
@@ -342,7 +343,7 @@ int main(int argc, char *argv[])
   // ==================================================================================
 
   printf("MU1:%.5f, MU2:%.5f, SIGMA1:%.5f, SIGMA2:%.5f, SIGMA3:%.5f \n",MU1,MU2,SIGMA1,SIGMA2,SIGMA3);
-  for(tubeloopi=1; tubeloopi<=NUMTUBE+1; tubeloopi++)
+  for(tubeloopi=1; tubeloopi<NUMTUBE; tubeloopi++)
   {
     // Initialize the means and B for all configuration
     // These will not change in the HMC loop
@@ -446,9 +447,9 @@ int main(int argc, char *argv[])
 
     normalizeAverages(tubeAve,&tau);
     //call the steepest descent function and reinitialize MPAR and BPAR for the next loop
-    tubesSteepestDescent(tubeAve);
+    //tubesSteepestDescent(tubeAve);
 
-    writeConfig(configNew,tubeAve,MCloopi);
+    writeConfig(configNew,tubeAve,MCloopi,tubeloopi);
     zeroAverages(tubeAve,&tau);
  
     printf("MU1:%.5f, MU2:%.5f, SIGMA1:%.5f, SIGMA2:%.5f, SIGMA3:%.5f \n",MU1,MU2,SIGMA1,SIGMA2,SIGMA3);
@@ -803,27 +804,29 @@ void savePostoConfig(position *currentpos, config *saveConfig)
 } } }
 
 //============================================
-void writeConfig(config *newConfig, averages *tubeAve, int MCloopi)
+void writeConfig(config *newConfig, averages *tubeAve, int MCloopi, int tubeloopi)
 {
 //print the configs to file
 //File order: posx   posy   meanx   meany   posx^2   posx*posy   posy^2
   char filename[80];
   int i,n;
 
-  sprintf(filename,"%s-T%.2f-pos%07d-h0%.5f-b%.5f-a%.5f.dat",PotentialString,TEMP,MCloopi,SIGMA1,SIGMA2,SIGMA3);
+  sprintf(filename,"%s-T%.2f-pos%07d.dat",PotentialString,TEMP,MCloopi*tubeloopi);
   FILE * pWritePos;
   pWritePos = fopen(filename,"w");
   for(n=0;n<NUMBEAD;n++){
     for(i=0;i<NUMDIM;i++){
-    fprintf(pWritePos, "%+.15e \t",newConfig[n].pos[i]);
+      fprintf(pWritePos, "%+.15e \t",newConfig[n].pos[i]);
     }
-    for(i=0;i<4;i++){
-    fprintf(pWritePos, "%+.15e \t",tubeAve[n].mean[i]);
+    for(i=0;i<2;i++){
+      fprintf(pWritePos, "%+.15e \t",tubeAve[n].mean[i]);
     }
-    for(i=0;i<10;i++){
-    fprintf(pWritePos, "%+.15e \t",tubeAve[n].meanB[i]);
+    for(i=0;i<3;i++){
+      fprintf(pWritePos, "%+.15e \t",tubeAve[n].meanB[i]);
     }
-    fprintf(pWritePos, "%+.15e \t",newConfig[n].B[0]);
+    for(i=0;i<5;i++){
+      fprintf(pWritePos, "%.15e \t",tubeAve[n].Deriv[i][0]);
+    }
     fprintf(pWritePos, "\n");
   }
   fclose(pWritePos);
@@ -901,16 +904,18 @@ void printDistance(config *newConfig, position *savePos)
 
 void zeroAverages(averages *tubeAve, int *tau)
   {
-  int n,m;
-  for(n=0;n<NUMBEAD;n++)
-  {
-    for(m=0;m<4;m++)
-    {
+  int n,m,k;
+  for(n=0;n<NUMBEAD;n++){
+    for(m=0;m<2;m++){
       tubeAve[n].mean[m]=0.0l;
     }
-    for(m=0;m<10;m++)
-    {
+    for(m=0;m<3;m++){
       tubeAve[n].meanB[m]=0.0l;
+    }
+    for(m=0;m<5;m++){
+      for(k=0;k<3;k++){
+        tubeAve[n].Deriv[m][k]=0.0l;
+      }
     }
   }
 
@@ -969,18 +974,29 @@ void accumulateAverages(averages *tubeAve, config *newConfig, int *tau)
   {
     tubeAve[n].mean[0]+=newConfig[n].pos[0];
     tubeAve[n].mean[1]+=newConfig[n].pos[1];
-    tubeAve[n].mean[2]+=ImIou*(newConfig[n].LinvG[0]-newConfig[n].pos[0]);
-    tubeAve[n].mean[3]+=ImIou*(newConfig[n].LinvG[1]-newConfig[n].pos[1]);
-    tubeAve[n].meanB[0]+=newConfig[n].pos[0]*newConfig[n].pos[0];
-    tubeAve[n].meanB[1]+=newConfig[n].pos[1]*newConfig[n].pos[1];
-    tubeAve[n].meanB[2]+=newConfig[n].pos[0]*newConfig[n].pos[1];
-    tubeAve[n].meanB[3]+=ImIou*newConfig[n].posz[0]*newConfig[n].posz[0];
-    tubeAve[n].meanB[4]+=ImIou*newConfig[n].posz[1]*newConfig[n].posz[1];
-    tubeAve[n].meanB[5]+=ImIou*newConfig[n].posz[0]*newConfig[n].posz[1];
-    tubeAve[n].meanB[6]+=newConfig[n].posz[0]*newConfig[n].posz[0];
-    tubeAve[n].meanB[7]+=newConfig[n].posz[1]*newConfig[n].posz[1];
-    tubeAve[n].meanB[8]+=newConfig[n].posz[0]*newConfig[n].posz[1];
-    tubeAve[n].meanB[9]+=ImIou;
+    tubeAve[n].meanB[0]+=newConfig[n].B[0];
+    tubeAve[n].meanB[1]+=newConfig[n].B[1];
+    tubeAve[n].meanB[2]+=newConfig[n].B[2];
+
+    tubeAve[n].Deriv[0][0]+=ImIou*(newConfig[n].LinvG[0]-newConfig[n].pos[0]);
+    tubeAve[n].Deriv[0][1]+=ImIou;
+    tubeAve[n].Deriv[0][2]+=(newConfig[n].LinvG[0]-newConfig[n].pos[0]);
+
+    tubeAve[n].Deriv[1][0]+=ImIou*(newConfig[n].LinvG[1]-newConfig[n].pos[1]);
+    tubeAve[n].Deriv[1][1]+=ImIou;
+    tubeAve[n].Deriv[1][2]+=(newConfig[n].LinvG[1]-newConfig[n].pos[1]);
+
+    tubeAve[n].Deriv[2][0]+=ImIou*newConfig[n].posz[0]*newConfig[n].posz[0];
+    tubeAve[n].Deriv[2][1]+=ImIou;
+    tubeAve[n].Deriv[2][2]+=newConfig[n].posz[0]*newConfig[n].posz[0];
+
+    tubeAve[n].Deriv[3][0]+=ImIou*newConfig[n].posz[1]*newConfig[n].posz[1];
+    tubeAve[n].Deriv[3][1]+=ImIou;
+    tubeAve[n].Deriv[3][2]+=newConfig[n].posz[1]*newConfig[n].posz[1];
+
+    tubeAve[n].Deriv[4][0]+=ImIou*newConfig[n].posz[0]*newConfig[n].posz[1];
+    tubeAve[n].Deriv[4][1]+=ImIou;
+    tubeAve[n].Deriv[4][2]+=newConfig[n].posz[0]*newConfig[n].posz[1];
   }
 }
 
@@ -991,15 +1007,16 @@ void normalizeAverages(averages *tubeAve, int *tau)
   double oneOverTau=1.0l/((double)(*tau));
 
   #pragma omp parallel for
-  for(n=0;n<NUMBEAD;n++)
-  {
-    for(m=0;m<4;m++)
-    {
+  for(n=0;n<NUMBEAD;n++){
+    for(m=0;m<2;m++){
       tubeAve[n].mean[m]*=oneOverTau;
     }
-    for(m=0;m<10;m++)
-    {
+    for(m=0;m<3;m++){
       tubeAve[n].meanB[m]*=oneOverTau;
+    }
+    for(m=0;m<5;m++){
+      //store the total derivative in the 0th array slot. saves dD/dm or dD/dB in the 0th slot
+      tubeAve[n].Deriv[m][0] = -1.0/(2.0*TEMP)*(tubeAve[n].Deriv[m][0]*oneOverTau - tubeAve[n].Deriv[m][1]*oneOverTau * tubeAve[n].Deriv[m][1]*oneOverTau); 
     }
   }
 }
@@ -1022,12 +1039,12 @@ void tubesSteepestDescent(averages *tubeAve)
   {
     dun=DU*((double)(n));
     //mean integration
-    tempMU1+= meanxDParx1Func(dun)*(tubeAve[n].mean[2]);
-    tempMU2+= meanxDParx2Func(dun)*(tubeAve[n].mean[3]);
+    tempMU1+= meanxDParx1Func(dun)*(tubeAve[n].Deriv[0][0]);
+    tempMU2+= meanxDParx2Func(dun)*(tubeAve[n].Deriv[1][0]);
     //B integration 
-    tempSIGMA1+= BxxDParx1Func(dun)*(tubeAve[n].meanB[3]-tubeAve[n].meanB[6]*tubeAve[n].meanB[9]);
-    tempSIGMA2+= BxxDParx2Func(dun)*(tubeAve[n].meanB[3]-tubeAve[n].meanB[6]*tubeAve[n].meanB[9]);
-    tempSIGMA3+= BxxDParx3Func(dun)*(tubeAve[n].meanB[3]-tubeAve[n].meanB[6]*tubeAve[n].meanB[9]);
+    tempSIGMA1+= BxxDParx1Func(dun)*tubeAve[n].Deriv[2][0];
+    tempSIGMA2+= BxxDParx2Func(dun)*tubeAve[n].Deriv[3][0];
+    tempSIGMA3+= BxxDParx3Func(dun)*tubeAve[n].Deriv[4][0];
   }
 
   //Steepest Descent: newp = oldp - gamma * Del Function
