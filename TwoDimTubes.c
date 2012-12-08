@@ -26,7 +26,7 @@
 #define NUMDIM    2           // Spacial Dimensions
 #define NUMBEAD   20001       // Path Points
 #define DU        0.0005      // path time step size
-#define PREDT     1000.0       // DT=PreDT*DU^2 (path time)
+#define PREDT     6000.0       // DT=PreDT*DU^2 (path time)
 
 // Temperature Definition
 #define TEMP      0.15
@@ -35,7 +35,7 @@
 #define NUMMD     50        // Number of MD steps 
 //      NUMMD     ~3/(2*sqrt(2*PreDT*DU^2)) <- Approx optimal value of NUMMD
 #define NUMMC     500      // Number of Metropolis Hastings MC steps
-#define NUMTUBE   10        // Number of tube steepest descent steps
+#define NUMTUBE   201        // Number of tube steepest descent steps
 
 // Constants for writing to stdout and config
 #define WRITESTDOUT  50       // How often to print to stdout (# of MD loops)
@@ -361,7 +361,7 @@ int main(int argc, char *argv[])
     rej=0;
     zeroAverages(tubeAve,&tau);
  
-    for(MCloopi=1; MCloopi<=NUMMC; MCloopi++)
+    for(MCloopi=1; MCloopi<NUMMC; MCloopi++)
     {
       //zero ratio for MH MC test
       ratio=0.0l;
