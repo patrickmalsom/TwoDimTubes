@@ -34,8 +34,8 @@
 // Incrimenter Definitions
 #define NUMMD     50        // Number of MD steps 
 //      NUMMD     ~3/(2*sqrt(2*PreDT*DU^2)) <- Approx optimal value of NUMMD
-#define NUMMC     500      // Number of Metropolis Hastings MC steps
-#define NUMTUBE   201        // Number of tube steepest descent steps
+#define NUMMC     10000      // Number of Metropolis Hastings MC steps
+#define NUMTUBE   20        // Number of tube steepest descent steps
 
 // Constants for writing to stdout and config
 #define WRITESTDOUT  50       // How often to print to stdout (# of MD loops)
@@ -396,7 +396,9 @@ int main(int argc, char *argv[])
       //calculate the averages for the tubes estimator
       accumulateAverages(tubeAve,configNew,&tau);
  
-      fprintf(pStdOut,"SPDE ratio: %+0.10f \n",ratio);
+      if(MCloopi%10==0){
+        fprintf(pStdOut,"SPDE ratio: %+0.10f \n",ratio);
+      }
       // ==================================================================================
       //     Start of MD Loop: This loop needs to be focused on for parallelization
       // ==================================================================================
@@ -419,8 +421,10 @@ int main(int argc, char *argv[])
         //calculate the average distance moved in the step and print to std out
         if(MDloopi%WRITESTDOUT==0){
  
-          fprintf(pStdOut,"MDi: %.5d | MDi*h: %0.5f | MD ratio: %+0.5f | distance: ",MDloopi,MDloopi*sqrt(2*DT),ratio); //newline is in printDistance function
+          if(MCloopi%10==0){
+            fprintf(pStdOut,"MDi: %.5d | MDi*h: %0.5f | MD ratio: %+0.5f | distance: ",MDloopi,MDloopi*sqrt(2*DT),ratio); //newline is in printDistance function
           printDistance(configNew, savePos);
+          }
         }
  
         //acc ratio of newconfig
@@ -440,14 +444,15 @@ int main(int argc, char *argv[])
       else{
         rej++;
       }  //end MD loop
-      fprintf(pStdOut,"rand=%+0.6f  Exp[ratio]=%+0.6f   dt= %+0.5e     acc= %i      rej= %i  \n",randUniform,exp(ratio/(2.0*TEMP)),DT,acc,rej);
-
+      if(MCloopi%10==0){
+        fprintf(pStdOut,"rand=%+0.6f  Exp[ratio]=%+0.6f   dt= %+0.5e     acc= %i      rej= %i  \n",randUniform,exp(ratio/(2.0*TEMP)),DT,acc,rej);
+      }
     }  //end MC loop
 
 
     normalizeAverages(tubeAve,&tau);
     //call the steepest descent function and reinitialize MPAR and BPAR for the next loop
-    //tubesSteepestDescent(tubeAve);
+    tubesSteepestDescent(tubeAve);
 
     writeConfig(configNew,tubeAve,MCloopi,tubeloopi);
     zeroAverages(tubeAve,&tau);
@@ -1032,8 +1037,9 @@ void tubesSteepestDescent(averages *tubeAve)
   double tempSIGMA1=0.0;
   double tempSIGMA2=0.0;
   double tempSIGMA3=0.0;
-  double gammaDescent=2.0;
   double dun;
+
+  double gammaDescent=2.0;
 
   for(n=0;n<NUMBEAD;n++)
   {
@@ -1047,10 +1053,10 @@ void tubesSteepestDescent(averages *tubeAve)
     tempSIGMA3+= BxxDParx3Func(dun)*tubeAve[n].Deriv[4][0];
   }
 
-  //Steepest Descent: newp = oldp - gamma * Del Function
-  MU1= MU1-10000.0*gammaDescent*tempMU1/((double)(NUMBEAD));
-  MU2= MU2-0.1*gammaDescent*tempMU2/((double)(NUMBEAD));
-  SIGMA1= SIGMA1-gammaDescent*tempSIGMA1/((double)(NUMBEAD));
-  SIGMA2= SIGMA2-gammaDescent*tempSIGMA2/((double)(NUMBEAD));
-  SIGMA3= SIGMA3-gammaDescent*tempSIGMA3/((double)(NUMBEAD));
+  //Steepest Descent: new = old - gamma * Del Function
+  //MU1= MU1-gammaDescent*tempMU1*DU;
+  //MU2= MU2-gammaDescent*tempMU2*DU;
+  SIGMA1= SIGMA1-gammaDescent*tempSIGMA1*DU;
+  SIGMA2= SIGMA2-gammaDescent*tempSIGMA2*DU;
+  SIGMA3= SIGMA3-gammaDescent*tempSIGMA3*DU;
 }
