@@ -34,8 +34,8 @@
 // Incrimenter Definitions
 #define NUMMD     50        // Number of MD steps 
 //      NUMMD     ~3/(2*sqrt(2*PreDT*DU^2)) <- Approx optimal value of NUMMD
-#define NUMMC     10000      // Number of Metropolis Hastings MC steps
-#define NUMTUBE   20        // Number of tube steepest descent steps
+#define NUMMC     1000      // Number of Metropolis Hastings MC steps
+#define NUMTUBE   2        // Number of tube steepest descent steps
 
 // Constants for writing to stdout and config
 #define WRITESTDOUT  50       // How often to print to stdout (# of MD loops)
@@ -80,7 +80,7 @@ double MU1 = 2.00; // steepness of the transition
 double MU2 = 0.97; // well location at finite temp
 
 double SIGMA1 = 7.52; // approx well hessian
-double SIGMA2 = 0.40;
+double SIGMA2 = 0.10;
 double SIGMA3 = 5.20;
 
 FILE *pStdOut;
@@ -702,7 +702,7 @@ void preconditionSPDE(config* currentConfig, config* newConfig, double bb[NUMBEA
   //print the quadratic variation 
   qvvel *= 0.5/(2.0l*DU*((double)(NUMBEAD-1)));
   qvpos *= 0.5/(2.0l*DU*((double)(NUMBEAD-1)));
-  fprintf(pStdOut,"qvvel=%0.10f      qvpos=%0.10f \n",qvvel,qvpos);
+  //fprintf(pStdOut,"qvvel=%0.10f      qvpos=%0.10f \n",qvvel,qvpos);
 
 }
 
@@ -1039,7 +1039,7 @@ void tubesSteepestDescent(averages *tubeAve)
   double tempSIGMA3=0.0;
   double dun;
 
-  double gammaDescent=2.0;
+  double gammaDescent=5.0;
 
   for(n=0;n<NUMBEAD;n++)
   {
@@ -1056,7 +1056,8 @@ void tubesSteepestDescent(averages *tubeAve)
   //Steepest Descent: new = old - gamma * Del Function
   //MU1= MU1-gammaDescent*tempMU1*DU;
   //MU2= MU2-gammaDescent*tempMU2*DU;
-  SIGMA1= SIGMA1-gammaDescent*tempSIGMA1*DU;
+  //SIGMA1= SIGMA1-gammaDescent*tempSIGMA1*DU;
   SIGMA2= SIGMA2-gammaDescent*tempSIGMA2*DU;
-  SIGMA3= SIGMA3-gammaDescent*tempSIGMA3*DU;
+  printf("tempsigma2*du: %0.10e \n",tempSIGMA2*DU);
+  //SIGMA3= SIGMA3-gammaDescent*tempSIGMA3*DU;
 }
