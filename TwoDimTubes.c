@@ -49,23 +49,28 @@ const char PotentialString[]="2WellTubes";// Potential Description
 //                   Tubes Definitions 
 //=============================================================================
 
+/* Mathematica code to generate the definitions (because CForm is broken...)
+Cdef[fun__]:=StringReplace[StringReplace[ToString[CForm[fun]],{"Sinh("->"sinh(","Cosh("->"cosh(","Tanh("->"tanh(","Csch("->"1/sinh(","Sech("->"1/cosh(","Coth("->"1/tanh(","Power("->"pow("," "->""}],"pow(E,"->"exp("]
+*/
+
 // Smooth functions for use in Tubes HMC
-#define meanxFunc(t)      MU2/tanh(5*MU1)*tanh(MU1*(-5+t))
+#define meanxFunc(t)      MU2*1/tanh(5.*MU1)*tanh(MU1*(-5.+t))
 #define meanyFunc(t)      0.0
-#define dmeanxFunc(t)     MU1*MU2/tanh(5*MU1)*pow(cosh(MU1*(-5+t)),-2.0)
+#define dmeanxFunc(t)     MU1*MU2*1/tanh(5.*MU1)*pow(1/cosh(MU1*(-5.+t)),2)
 #define dmeanyFunc(t)     0.0
-#define ddmeanxFunc(t)    -2*pow(MU1,2.0)*MU2/tanh(5*MU1)*pow(cosh(MU1*(-5+t)),-2.0)*tanh(MU1*(-5+t))
+#define ddmeanxFunc(t)    -2*pow(MU1,2)*MU2*1/tanh(5.*MU1)*pow(1/cosh(MU1*(-5.+t)),2)*tanh(MU1*(-5.+t))
 #define ddmeanyFunc(t)    0.0
-#define BxxFunc(t)        pow(SIGMA1+(SIGMA2-SIGMA1)*exp(-SIGMA3*pow(-5.+t,2)),2.0)
+#define BxxFunc(t)        7.52*7.52
+//#define BxxFunc(t)        pow(SIGMA1+(-SIGMA1+SIGMA2)/exp(SIGMA3*pow(-5.+t,2)),2)
 #define ByyFunc(t)        4.0
 #define BxyFunc(t)        0.0
 
 //derivatives wrt the parameters
-#define meanxDParx1Func(t)    MU2*(-5.0+t)/tanh(5.0*MU1)*pow(1.0/cosh(MU1*(-5.0+t)),2.0)-5.0*MU2*pow(1.0/sinh(5.0*MU1),2.0)*tanh(MU1*(-5.0+t))
-#define meanxDParx2Func(t)    tanh(MU1*(-5.0+t))/tanh(5.0*MU1)
-#define BxxDParx1Func(t)  -2*(SIGMA2-SIGMA3)*(SIGMA3+(SIGMA2-SIGMA3)*exp(-SIGMA1*pow(-5.+t,2)))*pow(-5.+t,2)*exp(-SIGMA1*pow(-5.+t,2))
-#define BxxDParx2Func(t)  2*exp(-SIGMA1*pow(-5.+t,2))*(SIGMA3+(SIGMA2-SIGMA3)*exp(-SIGMA1*pow(-5.+t,2)))
-#define BxxDParx3Func(t)  2*(1-exp(-SIGMA1*pow(-5.+t,2)))*(SIGMA3+(SIGMA2-SIGMA3)*exp(-SIGMA1*pow(-5.+t,2)))
+#define meanxDParx1Func(t)   MU2*(-5.+t)*1/tanh(5.*MU1)*pow(1/cosh(MU1*(-5.+t)),2)-5.*MU2*pow(1/sinh(5.*MU1),2)*tanh(MU1*(-5.+t))
+#define meanxDParx2Func(t)   1/tanh(5.*MU1)*tanh(MU1*(-5.+t))
+#define BxxDParx1Func(t)     2*(1-exp(-(SIGMA3*pow(-5.+t,2))))*(SIGMA1+(-SIGMA1+SIGMA2)/exp(SIGMA3*pow(-5.+t,2)))
+#define BxxDParx2Func(t)     (2*(SIGMA1+(-SIGMA1+SIGMA2)/exp(SIGMA3*pow(-5.+t,2))))/exp(SIGMA3*pow(-5.+t,2))
+#define BxxDParx3Func(t)     (-2*(-SIGMA1+SIGMA2)*(SIGMA1+(-SIGMA1+SIGMA2)/exp(SIGMA3*pow(-5.+t,2)))*pow(-5.+t,2))/exp(SIGMA3*pow(-5.+t,2)) 
 
 //=============================================================================
 //                   Global Variables
