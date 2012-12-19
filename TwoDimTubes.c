@@ -32,10 +32,10 @@
 #define TEMP      0.15
 
 // Incrimenter Definitions
-#define NUMMD     50        // Number of MD steps 
+#define NUMMD     150        // Number of MD steps 
 //      NUMMD     ~3/(2*sqrt(2*PreDT*DU^2)) <- Approx optimal value of NUMMD
-#define NUMMC     1000      // Number of Metropolis Hastings MC steps
-#define NUMTUBE   2        // Number of tube steepest descent steps
+#define NUMMC     100000      // Number of Metropolis Hastings MC steps
+#define NUMTUBE   4       // Number of tube steepest descent steps
 
 // Constants for writing to stdout and config
 #define WRITESTDOUT  50       // How often to print to stdout (# of MD loops)
@@ -60,8 +60,8 @@ Cdef[fun__]:=StringReplace[StringReplace[ToString[CForm[fun]],{"Sinh("->"sinh(",
 #define dmeanyFunc(t)     0.0
 #define ddmeanxFunc(t)    -2*pow(MU1,2)*MU2*1/tanh(5.*MU1)*pow(1/cosh(MU1*(-5.+t)),2)*tanh(MU1*(-5.+t))
 #define ddmeanyFunc(t)    0.0
-#define BxxFunc(t)        7.52*7.52
-//#define BxxFunc(t)        pow(SIGMA1+(-SIGMA1+SIGMA2)/exp(SIGMA3*pow(-5.+t,2)),2)
+//#define BxxFunc(t)        7.52*7.52
+#define BxxFunc(t)        pow(SIGMA1+(-SIGMA1+SIGMA2)/exp(SIGMA3*pow(-5.+t,2)),2)
 #define ByyFunc(t)        4.0
 #define BxyFunc(t)        0.0
 
@@ -85,8 +85,8 @@ double MU1 = 2.00; // steepness of the transition
 double MU2 = 0.97; // well location at finite temp
 
 double SIGMA1 = 7.52; // approx well hessian
-double SIGMA2 = 0.10;
-double SIGMA3 = 5.20;
+double SIGMA2 = -0.95;
+double SIGMA3 = 2.70;
 
 FILE *pStdOut;
 
@@ -146,10 +146,10 @@ void renormBB(double bb[NUMBEAD]);
 void renorm(position *currentpos);
 //Renormalize the starting path (positions) for the correct thermal fluctuation
 
-void calcPotentials(config *currentConfig, int beadIndex);
+void calcPotentials(config *currentConfig, int n);
 //Takes the config 'currentConfig' and calculates
-// G, gradG, LinvG, Energy for currentConfig[beadIndex].
-//Note: calculates potentials for a single bead (beadIndex).
+// G, gradG, LinvG, Energy for currentConfig[n].
+//Note: calculates potentials for a single bead (n).
 
 void LInverse(config* currentConfig, double vecdg[NUMl], double veci1[NUMl], double veci0[NUMl]);
 //L^(-1) y = x. finds the vector y
@@ -187,17 +187,17 @@ void writeConfig(config *newConfig, averages *tubeAve, int MCloopi, int tubeloop
 //writes the positions and the tube averages
 //only writes the iterations in constants.h
 
-void printPositionPos(position* currentpos, int beadIndex);
+void printPositionPos(position* currentpos, int n);
 //Print the positions of the position struct 
 
-void printConfigPos(config* currentConfig, int beadIndex);
+void printConfigPos(config* currentConfig, int n);
 //Print the positions of the config struct 
 
-void printConfigPot(config* currentConfig, int beadIndex);
+void printConfigPot(config* currentConfig, int n);
 //Print all information of the config struct calculated in calcPotentials
 // (Postitions, grad G, Energy, G)
 
-void printConfigAll(config* currentConfig, int beadIndex);
+void printConfigAll(config* currentConfig, int n);
 //Print all information of the config struct
 
 void printDistance(config *newConfig, position *savePos);
@@ -348,7 +348,7 @@ int main(int argc, char *argv[])
   // ==================================================================================
 
   printf("MU1:%.5f, MU2:%.5f, SIGMA1:%.5f, SIGMA2:%.5f, SIGMA3:%.5f \n",MU1,MU2,SIGMA1,SIGMA2,SIGMA3);
-  for(tubeloopi=1; tubeloopi<NUMTUBE; tubeloopi++)
+  for(tubeloopi=1; tubeloopi<=NUMTUBE; tubeloopi++)
   {
     // Initialize the means and B for all configuration
     // These will not change in the HMC loop
@@ -600,15 +600,17 @@ void renorm(position *currentpos)
 }
 
 //============================================
-void calcPotentials(config *currentConfig, int beadIndex)
+void calcPotentials(config *cConf, int n)
 {
-  currentConfig[beadIndex].posz[0]=currentConfig[beadIndex].pos[0]-currentConfig[beadIndex].posm[0];
-  currentConfig[beadIndex].posz[1]=currentConfig[beadIndex].pos[1]-currentConfig[beadIndex].posm[1];
+  cConf[n].posz[0]=cConf[n].pos[0]-cConf[n].posm[0];
+  cConf[n].posz[1]=cConf[n].pos[1]-cConf[n].posm[1];
 
-  currentConfig[beadIndex].Energy = VFunc(currentConfig[beadIndex].posm[0],currentConfig[beadIndex].posm[1])+0.5*(currentConfig[beadIndex].B[0]*currentConfig[beadIndex].posz[0]*currentConfig[beadIndex].posz[0]+currentConfig[beadIndex].B[1]*currentConfig[beadIndex].posz[1]*currentConfig[beadIndex].posz[1]+2.0*currentConfig[beadIndex].B[2]*currentConfig[beadIndex].posz[0]*currentConfig[beadIndex].posz[1])-currentConfig[beadIndex].pos[0]*currentConfig[beadIndex].posdm[0]-currentConfig[beadIndex].pos[1]*currentConfig[beadIndex].posdm[1];
-  currentConfig[beadIndex].G = 0.5*(currentConfig[beadIndex].B[0]*currentConfig[beadIndex].posz[0]*currentConfig[beadIndex].posz[0]+currentConfig[beadIndex].B[1]*currentConfig[beadIndex].posz[1]*currentConfig[beadIndex].posz[1]+2.0*currentConfig[beadIndex].B[2]*currentConfig[beadIndex].posz[0]*currentConfig[beadIndex].posz[1])+currentConfig[beadIndex].pos[0]*currentConfig[beadIndex].posddm[0]+currentConfig[beadIndex].pos[1]*currentConfig[beadIndex].posddm[1];
-  currentConfig[beadIndex].gradG[0] = currentConfig[beadIndex].B[0]*currentConfig[beadIndex].posz[0]+currentConfig[beadIndex].B[2]*currentConfig[beadIndex].posz[1]+currentConfig[beadIndex].posddm[0];
-  currentConfig[beadIndex].gradG[1] = currentConfig[beadIndex].B[1]*currentConfig[beadIndex].posz[1]+currentConfig[beadIndex].B[2]*currentConfig[beadIndex].posz[0]+currentConfig[beadIndex].posddm[1];
+//Energy is not used in any other routines
+  cConf[n].Energy = VFunc(cConf[n].posm[0],cConf[n].posm[1])+0.5*(cConf[n].B[0]*cConf[n].posz[0]*cConf[n].posz[0]+cConf[n].B[1]*cConf[n].posz[1]*cConf[n].posz[1]+2.0*cConf[n].B[2]*cConf[n].posz[0]*cConf[n].posz[1])-cConf[n].pos[0]*cConf[n].posdm[0]-cConf[n].pos[1]*cConf[n].posdm[1];
+//G=0.5(z.B.z)+ddm.x -OR- G=0.5(z.B.z)+ddm.z
+  cConf[n].G = 0.5*(cConf[n].B[0]*cConf[n].posz[0]*cConf[n].posz[0]+cConf[n].B[1]*cConf[n].posz[1]*cConf[n].posz[1]+2.0*cConf[n].B[2]*cConf[n].posz[0]*cConf[n].posz[1])+cConf[n].pos[0]*cConf[n].posddm[0]+cConf[n].pos[1]*cConf[n].posddm[1];
+  cConf[n].gradG[0] = cConf[n].B[0]*cConf[n].posz[0]+cConf[n].B[2]*cConf[n].posz[1]+cConf[n].posddm[0];
+  cConf[n].gradG[1] = cConf[n].B[1]*cConf[n].posz[1]+cConf[n].B[2]*cConf[n].posz[0]+cConf[n].posddm[1];
 }
 
 //============================================
@@ -819,7 +821,7 @@ void writeConfig(config *newConfig, averages *tubeAve, int MCloopi, int tubeloop
 //print the configs to file
 //File order: posx   posy   meanx   meany   posx^2   posx*posy   posy^2
   char filename[80];
-  int i,n;
+  int i,j,n;
 
   sprintf(filename,"%s-T%.2f-pos%07d.dat",PotentialString,TEMP,MCloopi*tubeloopi);
   FILE * pWritePos;
@@ -835,9 +837,13 @@ void writeConfig(config *newConfig, averages *tubeAve, int MCloopi, int tubeloop
       fprintf(pWritePos, "%+.15e \t",tubeAve[n].meanB[i]);
     }
     for(i=0;i<5;i++){
-      fprintf(pWritePos, "%.15e \t",tubeAve[n].Deriv[i][0]);
+      for(j=0;j<3;j++){
+        fprintf(pWritePos, "%.15e \t",tubeAve[n].Deriv[i][j]);
+      }
     }
     fprintf(pWritePos, "\n");
+
+
   }
   fclose(pWritePos);
 
@@ -859,36 +865,36 @@ void writeConfig(config *newConfig, averages *tubeAve, int MCloopi, int tubeloop
 }
 
 //============================================
-void printPositionPos(position* currentpos, int beadIndex)
+void printPositionPos(position* currentConfig, int n)
 //Print the positions of the position struct 
 {
   printf("position x             position y\n");
-  printf("%+.17e %+.17e \n",currentpos[beadIndex].pos[0],currentpos[beadIndex].pos[1]);
+  printf("%+.17e %+.17e \n",currentConfig[n].pos[0],currentConfig[n].pos[1]);
 }
 
 //============================================
-void printConfigPos(config* currentConfig, int beadIndex)
+void printConfigPos(config* currentConfig, int n)
 //Print the positions of the config struct 
 {
   printf("position x             position y\n");
-  printf("%+.17e %+.17e \n",currentConfig[beadIndex].pos[0],currentConfig[beadIndex].pos[1]);
+  printf("%+.17e %+.17e \n",currentConfig[n].pos[0],currentConfig[n].pos[1]);
 }
 
 //============================================
-void printConfigPot(config* currentConfig, int beadIndex)
+void printConfigPot(config* currentConfig, int n)
 //Print all information of the config struct calculated in calcPotentials
 // (Postitions, grad G, Energy, G)
 {
   printf("position x            position y               gradG x               gradG y               Energy                      G \n");
-  printf("%+.15e %+.15e %+.15e %+.15e %+.15e %+.15e \n",currentConfig[beadIndex].pos[0],currentConfig[beadIndex].pos[1],currentConfig[beadIndex].gradG[0],currentConfig[beadIndex].gradG[1],currentConfig[beadIndex].Energy,currentConfig[beadIndex].G);
+  printf("%+.15e %+.15e %+.15e %+.15e %+.15e %+.15e \n",currentConfig[n].pos[0],currentConfig[n].pos[1],currentConfig[n].gradG[0],currentConfig[n].gradG[1],currentConfig[n].Energy,currentConfig[n].G);
 }
 
 //============================================
-void printConfigAll(config* currentConfig, int beadIndex)
+void printConfigAll(config* currentConfig, int n)
 //Print all information of the config struct
 {
   printf("position x          position y           gradG x          gradG y         Energy               G              LinvG x            LinvG y\n");
-  printf("%+.10e %+.10e %+.10e %+.10e %+.10e %+.10e %+.10e %+.10e\n",currentConfig[beadIndex].pos[0],currentConfig[beadIndex].pos[1],currentConfig[beadIndex].gradG[0],currentConfig[beadIndex].gradG[1],currentConfig[beadIndex].Energy,currentConfig[beadIndex].G,currentConfig[beadIndex].LinvG[0],currentConfig[beadIndex].LinvG[1]);
+  printf("%+.10e %+.10e %+.10e %+.10e %+.10e %+.10e %+.10e %+.10e\n",currentConfig[n].pos[0],currentConfig[n].pos[1],currentConfig[n].gradG[0],currentConfig[n].gradG[1],currentConfig[n].Energy,currentConfig[n].G,currentConfig[n].LinvG[0],currentConfig[n].LinvG[1]);
 }
 
 //============================================
@@ -961,7 +967,7 @@ void accumulateAverages(averages *tubeAve, config *newConfig, int *tau)
 
   *tau=*tau+1;
 
-  I=1.0;
+  I=0.0;
   Iou=0.0;
 
   //calculate I and Iou. these are just numbers and are used below
@@ -972,9 +978,9 @@ void accumulateAverages(averages *tubeAve, config *newConfig, int *tau)
     Fy=-2.0*newConfig[n].pos[1];
     ddVy=2.0;
 
-    I+=DT*(0.5*(Fx*Fx+Fy*Fy)-TEMP*(ddVx+ddVy));
+    I+=DU*(0.5*(Fx*Fx+Fy*Fy)-TEMP*(ddVx+ddVy));
 
-    Iou+=DT*newConfig[n].G;
+    Iou+=DU*newConfig[n].G;
   }
 
   ImIou=I-Iou;
@@ -1013,7 +1019,7 @@ void accumulateAverages(averages *tubeAve, config *newConfig, int *tau)
 //============================================
 void normalizeAverages(averages *tubeAve, int *tau)
 {
-  int n,m;
+  int n,m,o;
   double oneOverTau=1.0l/((double)(*tau));
 
   #pragma omp parallel for
@@ -1025,8 +1031,9 @@ void normalizeAverages(averages *tubeAve, int *tau)
       tubeAve[n].meanB[m]*=oneOverTau;
     }
     for(m=0;m<5;m++){
-      //store the total derivative in the 0th array slot. saves dD/dm or dD/dB in the 0th slot
-      tubeAve[n].Deriv[m][0] = -1.0/(2.0*TEMP)*(tubeAve[n].Deriv[m][0]*oneOverTau - tubeAve[n].Deriv[m][1]*oneOverTau * tubeAve[n].Deriv[m][2]*oneOverTau); 
+      for(o=0;o<3;o++){
+        tubeAve[n].Deriv[m][o] = tubeAve[n].Deriv[m][o]*oneOverTau;
+      }
     }
   }
 }
@@ -1044,25 +1051,30 @@ void tubesSteepestDescent(averages *tubeAve)
   double tempSIGMA3=0.0;
   double dun;
 
-  double gammaDescent=5.0;
+  double gammaDescent[5];
+  gammaDescent[0]=0.0;
+  gammaDescent[1]=0.0;
+  gammaDescent[2]=0.0;
+  gammaDescent[3]=0.0;
+  gammaDescent[4]=0.0;
 
   for(n=0;n<NUMBEAD;n++)
   {
     dun=DU*((double)(n));
     //mean integration
     tempMU1+= meanxDParx1Func(dun)*(tubeAve[n].Deriv[0][0]);
-    tempMU2+= meanxDParx2Func(dun)*(tubeAve[n].Deriv[1][0]);
+    tempMU2+= meanxDParx2Func(dun)*(tubeAve[n].Deriv[0][0]);
     //B integration 
     tempSIGMA1+= BxxDParx1Func(dun)*tubeAve[n].Deriv[2][0];
-    tempSIGMA2+= BxxDParx2Func(dun)*tubeAve[n].Deriv[3][0];
-    tempSIGMA3+= BxxDParx3Func(dun)*tubeAve[n].Deriv[4][0];
+    tempSIGMA2+= BxxDParx2Func(dun)*tubeAve[n].Deriv[2][0];
+    tempSIGMA3+= BxxDParx3Func(dun)*tubeAve[n].Deriv[2][0];
   }
 
   //Steepest Descent: new = old - gamma * Del Function
-  //MU1= MU1-gammaDescent*tempMU1*DU;
-  //MU2= MU2-gammaDescent*tempMU2*DU;
-  //SIGMA1= SIGMA1-gammaDescent*tempSIGMA1*DU;
-  SIGMA2= SIGMA2-gammaDescent*tempSIGMA2*DU;
-  printf("tempsigma2*du: %0.10e \n",tempSIGMA2*DU);
-  //SIGMA3= SIGMA3-gammaDescent*tempSIGMA3*DU;
+  MU1= MU1-gammaDescent[0]*tempMU1*DU;
+  MU2= MU2-gammaDescent[1]*tempMU2*DU;
+  //SIGMA1= SIGMA1-gammaDescent[2]*tempSIGMA1*DU;
+  SIGMA2= SIGMA2-gammaDescent[3]*tempSIGMA2*DU;
+  SIGMA3= SIGMA3-gammaDescent[4]*tempSIGMA3*DU;
+  printf("Gradients: M1: %+0.10e, M2: %+0.10e, S2: %+0.10e, S3: %+0.10e, \n",tempMU1*DU,tempMU2*DU,tempSIGMA2*DU,tempSIGMA3*DU);
 }
