@@ -35,7 +35,7 @@
 #define NUMMD     50        // Number of MD steps 
 //      NUMMD     ~3/(2*sqrt(2*PreDT*DU^2)) <- Approx optimal value of NUMMD
 #define NUMMC     10000    // Number of Metropolis Hastings MC steps
-#define NUMTUBE   100        // Number of tube steepest descent steps
+#define NUMTUBE   10        // Number of tube steepest descent steps
 
 // Constants for writing to stdout and config
 #define WRITESTDOUT  50       // How often to print to stdout (# of MD loops)
@@ -1060,12 +1060,12 @@ void tubesSteepestDescent(averages *tubeAve)
   {
     dun=DU*((double)(n));
     //mean integration
-    tempMU1+= meanxDParx1Func(dun)*(tubeAve[n].Deriv[0][0]);
-    tempMU2+= meanxDParx2Func(dun)*(tubeAve[n].Deriv[0][0]);
+    tempMU1+= meanxDParx1Func(dun)*(tubeAve[n].Deriv[0][0]-tubeAve[n].Deriv[0][1]*tubeAve[n].Deriv[0][2]);
+    tempMU2+= meanxDParx2Func(dun)*(tubeAve[n].Deriv[1][0]-tubeAve[n].Deriv[1][1]*tubeAve[n].Deriv[1][2]);
     //B integration 
-    tempSIGMA1+= BxxDParx1Func(dun)*tubeAve[n].Deriv[2][0];
-    tempSIGMA2+= BxxDParx2Func(dun)*tubeAve[n].Deriv[2][0];
-    tempSIGMA3+= BxxDParx3Func(dun)*tubeAve[n].Deriv[2][0];
+    tempSIGMA1+= BxxDParx1Func(dun)*(-tubeAve[n].Deriv[2][0]+tubeAve[n].Deriv[2][1]*tubeAve[n].Deriv[2][2]);
+    tempSIGMA2+= BxxDParx2Func(dun)*(-tubeAve[n].Deriv[3][0]+tubeAve[n].Deriv[3][1]*tubeAve[n].Deriv[3][2]);
+    tempSIGMA3+= BxxDParx3Func(dun)*(-tubeAve[n].Deriv[4][0]+tubeAve[n].Deriv[4][1]*tubeAve[n].Deriv[4][2]);
   }
 
   //Steepest Descent: new = old - gamma * Del Function
