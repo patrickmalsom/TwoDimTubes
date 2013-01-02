@@ -32,10 +32,10 @@
 #define TEMP      0.15
 
 // Incrimenter Definitions
-#define NUMMD     150        // Number of MD steps 
+#define NUMMD     50        // Number of MD steps 
 //      NUMMD     ~3/(2*sqrt(2*PreDT*DU^2)) <- Approx optimal value of NUMMD
-#define NUMMC     100000      // Number of Metropolis Hastings MC steps
-#define NUMTUBE   4       // Number of tube steepest descent steps
+#define NUMMC     10000    // Number of Metropolis Hastings MC steps
+#define NUMTUBE   100        // Number of tube steepest descent steps
 
 // Constants for writing to stdout and config
 #define WRITESTDOUT  50       // How often to print to stdout (# of MD loops)
@@ -85,8 +85,8 @@ double MU1 = 2.00; // steepness of the transition
 double MU2 = 0.97; // well location at finite temp
 
 double SIGMA1 = 7.52; // approx well hessian
-double SIGMA2 = -0.95;
-double SIGMA3 = 2.70;
+double SIGMA2 = 0.4;
+double SIGMA3 = 5.2;
 
 FILE *pStdOut;
 
@@ -962,15 +962,15 @@ void initMeans(config *currentConfig)
 void accumulateAverages(averages *tubeAve, config *newConfig, int *tau)
 {
   int n;
-  double I, Iou, ImIou;
+  double ImIou;
   double Fx, ddVx, Fy, ddVy;
 
   *tau=*tau+1;
 
-  I=0.0;
-  Iou=0.0;
+  ImIou=0.0;
 
   //calculate I and Iou. these are just numbers and are used below
+  #pragma omp parallel for reduction(+:ImIou)
   for(n=0;n<NUMBEAD;n++)
   {
     Fx=4.0*newConfig[n].pos[0]-4.0*gsl_pow_int(newConfig[n].pos[0],3);
@@ -978,14 +978,11 @@ void accumulateAverages(averages *tubeAve, config *newConfig, int *tau)
     Fy=-2.0*newConfig[n].pos[1];
     ddVy=2.0;
 
-    I+=DU*(0.5*(Fx*Fx+Fy*Fy)-TEMP*(ddVx+ddVy));
-
-    Iou+=DU*newConfig[n].G;
+    ImIou+=(DU*(0.5*(Fx*Fx+Fy*Fy)-TEMP*(ddVx+ddVy))-DU*newConfig[n].G);
   }
 
-  ImIou=I-Iou;
-
   //Calculate dm/dtau and dBij/dtau and save to an array for averaging later
+  #pragma omp parallel for
   for(n=0;n<NUMBEAD;n++)
   {
     tubeAve[n].mean[0]+=newConfig[n].pos[0];
@@ -1022,7 +1019,7 @@ void normalizeAverages(averages *tubeAve, int *tau)
   int n,m,o;
   double oneOverTau=1.0l/((double)(*tau));
 
-  #pragma omp parallel for
+  #pragma omp parallel for private(m)
   for(n=0;n<NUMBEAD;n++){
     for(m=0;m<2;m++){
       tubeAve[n].mean[m]*=oneOverTau;
@@ -1055,9 +1052,10 @@ void tubesSteepestDescent(averages *tubeAve)
   gammaDescent[0]=0.0;
   gammaDescent[1]=0.0;
   gammaDescent[2]=0.0;
-  gammaDescent[3]=0.0;
-  gammaDescent[4]=0.0;
+  gammaDescent[3]=0.5;
+  gammaDescent[4]=0.5;
 
+  #pragma omp parallel for
   for(n=0;n<NUMBEAD;n++)
   {
     dun=DU*((double)(n));
@@ -1073,7 +1071,7 @@ void tubesSteepestDescent(averages *tubeAve)
   //Steepest Descent: new = old - gamma * Del Function
   MU1= MU1-gammaDescent[0]*tempMU1*DU;
   MU2= MU2-gammaDescent[1]*tempMU2*DU;
-  //SIGMA1= SIGMA1-gammaDescent[2]*tempSIGMA1*DU;
+  SIGMA1= SIGMA1-gammaDescent[2]*tempSIGMA1*DU;
   SIGMA2= SIGMA2-gammaDescent[3]*tempSIGMA2*DU;
   SIGMA3= SIGMA3-gammaDescent[4]*tempSIGMA3*DU;
   printf("Gradients: M1: %+0.10e, M2: %+0.10e, S2: %+0.10e, S3: %+0.10e, \n",tempMU1*DU,tempMU2*DU,tempSIGMA2*DU,tempSIGMA3*DU);
