@@ -34,8 +34,8 @@
 // Incrimenter Definitions
 #define NUMMD     50        // Number of MD steps 
 //      NUMMD     ~3/(2*sqrt(2*PreDT*DU^2)) <- Approx optimal value of NUMMD
-#define NUMMC     10000    // Number of Metropolis Hastings MC steps
-#define NUMTUBE   10        // Number of tube steepest descent steps
+#define NUMMC     1000    // Number of Metropolis Hastings MC steps
+#define NUMTUBE   20        // Number of tube steepest descent steps
 
 // Constants for writing to stdout and config
 #define WRITESTDOUT  50       // How often to print to stdout (# of MD loops)
@@ -85,7 +85,7 @@ double MU1 = 2.00; // steepness of the transition
 double MU2 = 0.97; // well location at finite temp
 
 double SIGMA1 = 7.52; // approx well hessian
-double SIGMA2 = 0.4;
+double SIGMA2 = 1.4;
 double SIGMA3 = 5.2;
 
 FILE *pStdOut;
@@ -398,9 +398,6 @@ int main(int argc, char *argv[])
       //acc ratio of newconfig
       ProbAccRatio(configCurrent, configNew, &ratio);
  
-      //calculate the averages for the tubes estimator
-      accumulateAverages(tubeAve,configNew,&tau);
- 
       if(MCloopi%10==0){
         fprintf(pStdOut,"SPDE ratio: %+0.10f \n",ratio);
       }
@@ -435,8 +432,6 @@ int main(int argc, char *argv[])
         //acc ratio of newconfig
         ProbAccRatio(configCurrent, configNew, &ratio);
  
-        //calculate the averages for the tubes estimator
-        accumulateAverages(tubeAve,configNew,&tau);
       }
       // ==================================================================================
       //Metropolis Hastings Monte-Carlo test
@@ -449,8 +444,19 @@ int main(int argc, char *argv[])
       else{
         rej++;
       }  //end MD loop
+
+      //calculate the averages for the tubes estimator
+      savePostoConfig(savePos, configCurrent);
+      //(calculates potentials in config given the positions)
+      #pragma omp parallel for
+      for(i=0;i<NUMBEAD;i++) {calcPotentials(configCurrent,i);}
+      //calculate LinvG for the config
+      LInverse(configCurrent, vecdg, veci1, veci0);
+      accumulateAverages(tubeAve,configCurrent,&tau);
+
       if(MCloopi%10==0){
         fprintf(pStdOut,"rand=%+0.6f  Exp[ratio]=%+0.6f   dt= %+0.5e     acc= %i      rej= %i  \n",randUniform,exp(ratio/(2.0*TEMP)),DT,acc,rej);
+
       }
     }  //end MC loop
 
@@ -981,6 +987,7 @@ void accumulateAverages(averages *tubeAve, config *newConfig, int *tau)
     ImIou+=(DU*(0.5*(Fx*Fx+Fy*Fy)-TEMP*(ddVx+ddVy))-DU*newConfig[n].G);
   }
 
+
   //Calculate dm/dtau and dBij/dtau and save to an array for averaging later
   #pragma omp parallel for
   for(n=0;n<NUMBEAD;n++)
@@ -1052,8 +1059,8 @@ void tubesSteepestDescent(averages *tubeAve)
   gammaDescent[0]=0.0;
   gammaDescent[1]=0.0;
   gammaDescent[2]=0.0;
-  gammaDescent[3]=0.5;
-  gammaDescent[4]=0.5;
+  gammaDescent[3]=0.0;
+  gammaDescent[4]=0.0;
 
   #pragma omp parallel for
   for(n=0;n<NUMBEAD;n++)
@@ -1076,3 +1083,4 @@ void tubesSteepestDescent(averages *tubeAve)
   SIGMA3= SIGMA3-gammaDescent[4]*tempSIGMA3*DU;
   printf("Gradients: M1: %+0.10e, M2: %+0.10e, S2: %+0.10e, S3: %+0.10e, \n",tempMU1*DU,tempMU2*DU,tempSIGMA2*DU,tempSIGMA3*DU);
 }
+
