@@ -69,7 +69,7 @@ Cdef[fun__]:=StringReplace[StringReplace[ToString[CForm[fun]],{"Sinh("->"sinh(",
 #define meanxDParx1Func(t)   MU2*(-5.+t)*1/tanh(5.*MU1)*pow(1/cosh(MU1*(-5.+t)),2)-5.*MU2*pow(1/sinh(5.*MU1),2)*tanh(MU1*(-5.+t))
 #define meanxDParx2Func(t)   1/tanh(5.*MU1)*tanh(MU1*(-5.+t))
 #define BxxDParx1Func(t)     2*(1-exp(-(SIGMA3*pow(-5.+t,2))))*(SIGMA1+(-SIGMA1+SIGMA2)/exp(SIGMA3*pow(-5.+t,2)))
-#define BxxDParx2Func(t)     (2*(SIGMA1+(-SIGMA1+SIGMA2)/exp(SIGMA3*pow(-5.+t,2))))/exp(SIGMA3*pow(-5.+t,2))
+#define BxxDParx2Func(t)     (2*(SIGMA1+(-SIGMA1+SIGMA2)*exp(-SIGMA3*pow(-5.+t,2))))*exp(-SIGMA3*pow(-5.+t,2))
 #define BxxDParx3Func(t)     (-2*(-SIGMA1+SIGMA2)*(SIGMA1+(-SIGMA1+SIGMA2)/exp(SIGMA3*pow(-5.+t,2)))*pow(-5.+t,2))/exp(SIGMA3*pow(-5.+t,2)) 
 
 //=============================================================================
@@ -235,7 +235,7 @@ int main(int argc, char *argv[])
   // Declare variables and print to std output for reference
   //===============================================================
   //define the Config structs. Example: configOld[n].pos[i]
-  //where n->Bead i->dimension
+  //where n->Bead i->dimensionw
   config *configOld = calloc(NUMBEAD,sizeof(config));
   config *configCurrent = calloc(NUMBEAD,sizeof(config));
   config *configNew = calloc(NUMBEAD,sizeof(config));
@@ -1062,17 +1062,16 @@ void tubesSteepestDescent(averages *tubeAve)
   gammaDescent[3]=0.0;
   gammaDescent[4]=0.0;
 
-  #pragma omp parallel for
   for(n=0;n<NUMBEAD;n++)
   {
     dun=DU*((double)(n));
     //mean integration
     tempMU1+= meanxDParx1Func(dun)*(tubeAve[n].Deriv[0][0]-tubeAve[n].Deriv[0][1]*tubeAve[n].Deriv[0][2]);
-    tempMU2+= meanxDParx2Func(dun)*(tubeAve[n].Deriv[1][0]-tubeAve[n].Deriv[1][1]*tubeAve[n].Deriv[1][2]);
+    tempMU2+= meanxDParx2Func(dun)*(tubeAve[n].Deriv[0][0]-tubeAve[n].Deriv[0][1]*tubeAve[n].Deriv[0][2]);
     //B integration 
     tempSIGMA1+= BxxDParx1Func(dun)*(-tubeAve[n].Deriv[2][0]+tubeAve[n].Deriv[2][1]*tubeAve[n].Deriv[2][2]);
-    tempSIGMA2+= BxxDParx2Func(dun)*(-tubeAve[n].Deriv[3][0]+tubeAve[n].Deriv[3][1]*tubeAve[n].Deriv[3][2]);
-    tempSIGMA3+= BxxDParx3Func(dun)*(-tubeAve[n].Deriv[4][0]+tubeAve[n].Deriv[4][1]*tubeAve[n].Deriv[4][2]);
+    tempSIGMA2=tempSIGMA2+(BxxDParx2Func(dun)*(-tubeAve[n].Deriv[2][0]+tubeAve[n].Deriv[2][1]*tubeAve[n].Deriv[2][2]));
+    tempSIGMA3+= BxxDParx3Func(dun)*(-tubeAve[n].Deriv[2][0]+tubeAve[n].Deriv[2][1]*tubeAve[n].Deriv[2][2]);
   }
 
   //Steepest Descent: new = old - gamma * Del Function
@@ -1081,6 +1080,6 @@ void tubesSteepestDescent(averages *tubeAve)
   SIGMA1= SIGMA1-gammaDescent[2]*tempSIGMA1*DU;
   SIGMA2= SIGMA2-gammaDescent[3]*tempSIGMA2*DU;
   SIGMA3= SIGMA3-gammaDescent[4]*tempSIGMA3*DU;
-  printf("Gradients: M1: %+0.10e, M2: %+0.10e, S2: %+0.10e, S3: %+0.10e, \n",tempMU1*DU,tempMU2*DU,tempSIGMA2*DU,tempSIGMA3*DU);
+  printf("DU: %+0.10e\n",DU);
+  printf("Gradients: M1: %+0.10e, M2: %+0.10e, S2: %+0.10e, S3: %+0.10e, \n",tempMU1,tempMU2,tempSIGMA2,tempSIGMA3);
 }
-
