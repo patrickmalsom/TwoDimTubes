@@ -34,8 +34,8 @@
 // Incrimenter Definitions
 #define NUMMD     50        // Number of MD steps 
 //      NUMMD     ~3/(2*sqrt(2*PreDT*DU^2)) <- Approx optimal value of NUMMD
-#define NUMMC     1000    // Number of Metropolis Hastings MC steps
-#define NUMTUBE   20        // Number of tube steepest descent steps
+#define NUMMC     2000    // Number of Metropolis Hastings MC steps
+#define NUMTUBE   1000        // Number of tube steepest descent steps
 
 // Constants for writing to stdout and config
 #define WRITESTDOUT  50       // How often to print to stdout (# of MD loops)
@@ -1059,8 +1059,8 @@ void tubesSteepestDescent(averages *tubeAve)
   gammaDescent[0]=0.0;
   gammaDescent[1]=0.0;
   gammaDescent[2]=0.0;
-  gammaDescent[3]=0.0;
-  gammaDescent[4]=0.0;
+  gammaDescent[3]=0.5;
+  gammaDescent[4]=0.5;
 
   for(n=0;n<NUMBEAD;n++)
   {
