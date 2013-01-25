@@ -34,8 +34,8 @@
 // Incrimenter Definitions
 #define NUMMD     50        // Number of MD steps 
 //      NUMMD     ~3/(2*sqrt(2*PreDT*DU^2)) <- Approx optimal value of NUMMD
-#define NUMMC     2000    // Number of Metropolis Hastings MC steps
-#define NUMTUBE   1000        // Number of tube steepest descent steps
+#define NUMMC     100    // Number of Metropolis Hastings MC steps
+#define NUMTUBE   3        // Number of tube steepest descent steps
 
 // Constants for writing to stdout and config
 #define WRITESTDOUT  50       // How often to print to stdout (# of MD loops)
