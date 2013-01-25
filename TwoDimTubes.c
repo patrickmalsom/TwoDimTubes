@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 //OpenMP libraries
 #include <omp.h>
 //GNU Scientific Libraries
@@ -229,6 +230,10 @@ void tubesSteepestDescent(averages *tubeAve);
 int main(int argc, char *argv[])
 { 
   setbuf(stdout,NULL);  //allows a pipe to from stdout to file
+
+  clock_t beginTimer, endTimer;
+  double time_spent;
+  beginTimer = clock();
 
   //file name for writing std out
   pStdOut= fopen("StdOut.dat","w");
@@ -474,8 +479,11 @@ int main(int argc, char *argv[])
     printf("MU1:%.5f, MU2:%.5f, SIGMA1:%.5f, SIGMA2:%.5f, SIGMA3:%.5f \n",MU1,MU2,SIGMA1,SIGMA2,SIGMA3);
   }  //end tube gradient descent loop
 
+  //timing
+  endTimer = clock();
+  time_spent = (double)(endTimer - beginTimer) / CLOCKS_PER_SEC;
   //consistancy check
-  printf("sumBB:%+0.10e, sum:%+0.10e \n",checkSumBB/6.0062647801, checkSum/1.6745487066);
+  printf("sumBB:%+0.10e, sum:%+0.10e , timer:%.2f \n",checkSumBB/6.0062647801, checkSum/1.6745487066,time_spent);
 
   // GSL random number generator release memory and close files
   gsl_rng_free (RanNumPointer);
