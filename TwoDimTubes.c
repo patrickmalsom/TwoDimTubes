@@ -90,6 +90,9 @@ double SIGMA3 = 5.2;
 
 FILE *pStdOut;
 
+double checkSumBB = 0.0;
+double checkSum = 0.0;
+
 // ==================================================================================
 // Structure Definitions
 // ==================================================================================
@@ -471,6 +474,9 @@ int main(int argc, char *argv[])
     printf("MU1:%.5f, MU2:%.5f, SIGMA1:%.5f, SIGMA2:%.5f, SIGMA3:%.5f \n",MU1,MU2,SIGMA1,SIGMA2,SIGMA3);
   }  //end tube gradient descent loop
 
+  //consistancy check
+  printf("sumBB:%+0.10e, sum:%+0.10e \n",checkSumBB/6.0062647801, checkSum/1.6745487066);
+
   // GSL random number generator release memory and close files
   gsl_rng_free (RanNumPointer);
   fclose(pStdOut);
@@ -543,6 +549,7 @@ void generateBB(double bb[NUMBEAD], double GaussRandArray[NUMu], gsl_rng *RanNum
     bb[n]-=((double)(n))*xn;
   }
   bb[NUMBEAD-1]=0.0l;
+
 }
 
 // ============================================
@@ -573,6 +580,11 @@ void renormBB(double bb[NUMBEAD])
   for(n=1;n<NUMu;n++)
   {
     bb[n]=alpha*bb[n]+term0+((double)(n-1))*term;
+  }
+
+  for(n=1;n<NUMu;n++)
+  {
+    checkSumBB = checkSumBB+bb[n];
   }
 }
 
@@ -976,7 +988,6 @@ void accumulateAverages(averages *tubeAve, config *newConfig, int *tau)
   ImIou=0.0;
 
   //calculate I and Iou. these are just numbers and are used below
-  #pragma omp parallel for reduction(+:ImIou)
   for(n=0;n<NUMBEAD;n++)
   {
     Fx=4.0*newConfig[n].pos[0]-4.0*gsl_pow_int(newConfig[n].pos[0],3);
@@ -1017,6 +1028,11 @@ void accumulateAverages(averages *tubeAve, config *newConfig, int *tau)
     tubeAve[n].Deriv[4][0]+=ImIou*newConfig[n].posz[0]*newConfig[n].posz[1];
     tubeAve[n].Deriv[4][1]+=ImIou;
     tubeAve[n].Deriv[4][2]+=newConfig[n].posz[0]*newConfig[n].posz[1];
+
+  }
+  for(n=0;n<NUMBEAD;n++)
+  {
+    checkSum=checkSum+tubeAve[n].Deriv[0][0]+tubeAve[n].Deriv[2][0];
   }
 }
 
