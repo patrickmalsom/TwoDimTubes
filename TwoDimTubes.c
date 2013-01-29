@@ -231,9 +231,9 @@ int main(int argc, char *argv[])
 { 
   setbuf(stdout,NULL);  //allows a pipe to from stdout to file
 
-  clock_t beginTimer, endTimer;
-  double time_spent;
-  beginTimer = clock();
+  struct timeval startTimer, endTimer;
+  gettimeofday(&startTimer,NULL);
+
 
   //file name for writing std out
   pStdOut= fopen("StdOut.dat","w");
@@ -479,15 +479,14 @@ int main(int argc, char *argv[])
     printf("MU1:%.5f, MU2:%.5f, SIGMA1:%.5f, SIGMA2:%.5f, SIGMA3:%.5f \n",MU1,MU2,SIGMA1,SIGMA2,SIGMA3);
   }  //end tube gradient descent loop
 
-  //timing
-  endTimer = clock();
-  time_spent = (double)(endTimer - beginTimer) / CLOCKS_PER_SEC;
-  //consistancy check
-  printf("sumBB:%+0.10e, sum:%+0.10e , timer:%.2f \n",checkSumBB/6.0062647801, checkSum/1.6745487066,time_spent);
-
   // GSL random number generator release memory and close files
   gsl_rng_free (RanNumPointer);
   fclose(pStdOut);
+
+  //timing
+  gettimeofday(&endTimer,NULL);
+  printf("Timer: %f seconds \n",((double)(((endTimer.tv_sec  - startTimer.tv_sec) * 1000 + (endTimer.tv_usec - startTimer.tv_usec)/1000.0) + 0.5))/1000.0);
+  printf("sumBB:%+0.10e, sum:%+0.10e \n",checkSumBB/6.0062647801, checkSum/1.6745487066);
 
   return(0);
 }
