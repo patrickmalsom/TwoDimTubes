@@ -926,7 +926,6 @@ void printDistance(config *newConfig, position *savePos)
   double tempSum;
 
   tempSum=0.0l;
-  #pragma omp parallel for private(i) reduction(+:tempSum)
   for(n=1;n<NUMBEAD-1;n++)
   {
     for(i=0;i<NUMDIM;i++)
