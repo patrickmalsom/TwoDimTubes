@@ -551,7 +551,6 @@ void generateBB(double bb[NUMBEAD], double GaussRandArray[NUMu], gsl_rng *RanNum
   }
 
   xn=bb[NUMu]/((double)(NUMu));
-  #pragma omp parallel for
   for(n=1;n<NUMu;n++)
   {
     bb[n]-=((double)(n))*xn;
@@ -571,7 +570,6 @@ void renormBB(double bb[NUMBEAD])
   endPtCorr=gsl_pow_int(bb[0]-bb[NUMBEAD-1],2)/((double)(NUMu));
 
   sum=0.0l;
-  #pragma omp parallel for reduction(+:sum)
   for(n=0;n<NUMu;n++)
   {
     sum+=gsl_pow_int(bb[n]-bb[n+1],2);
@@ -584,7 +582,6 @@ void renormBB(double bb[NUMBEAD])
   // alpha is ~1 with an error of 10^-4 or 5 for sample configs. This makes the routine 
   //nondeterministic between Fortran and C
 
-  #pragma omp parallel for
   for(n=1;n<NUMu;n++)
   {
     bb[n]=alpha*bb[n]+term0+((double)(n-1))*term;
@@ -1008,7 +1005,6 @@ void accumulateAverages(averages *tubeAve, config *newConfig, int *tau)
 
 
   //Calculate dm/dtau and dBij/dtau and save to an array for averaging later
-  #pragma omp parallel for
   for(n=0;n<NUMBEAD;n++)
   {
     tubeAve[n].mean[0]+=newConfig[n].pos[0];
@@ -1050,7 +1046,6 @@ void normalizeAverages(averages *tubeAve, int *tau)
   int n,m,o;
   double oneOverTau=1.0l/((double)(*tau));
 
-  #pragma omp parallel for private(m)
   for(n=0;n<NUMBEAD;n++){
     for(m=0;m<2;m++){
       tubeAve[n].mean[m]*=oneOverTau;
