@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 //OpenMP libraries
 #include <omp.h>
 //GNU Scientific Libraries
@@ -34,8 +35,8 @@
 // Incrimenter Definitions
 #define NUMMD     50        // Number of MD steps 
 //      NUMMD     ~3/(2*sqrt(2*PreDT*DU^2)) <- Approx optimal value of NUMMD
-#define NUMMC     2000    // Number of Metropolis Hastings MC steps
-#define NUMTUBE   1000        // Number of tube steepest descent steps
+#define NUMMC     100    // Number of Metropolis Hastings MC steps
+#define NUMTUBE   3        // Number of tube steepest descent steps
 
 // Constants for writing to stdout and config
 #define WRITESTDOUT  50       // How often to print to stdout (# of MD loops)
@@ -89,6 +90,9 @@ double SIGMA2 = 1.4;
 double SIGMA3 = 5.2;
 
 FILE *pStdOut;
+
+double checkSumBB = 0.0;
+double checkSum = 0.0;
 
 // ==================================================================================
 // Structure Definitions
@@ -226,6 +230,10 @@ void tubesSteepestDescent(averages *tubeAve);
 int main(int argc, char *argv[])
 { 
   setbuf(stdout,NULL);  //allows a pipe to from stdout to file
+
+  struct timeval startTimer, endTimer;
+  gettimeofday(&startTimer,NULL);
+
 
   //file name for writing std out
   pStdOut= fopen("StdOut.dat","w");
@@ -475,6 +483,11 @@ int main(int argc, char *argv[])
   gsl_rng_free (RanNumPointer);
   fclose(pStdOut);
 
+  //timing
+  gettimeofday(&endTimer,NULL);
+  printf("Timer: %f seconds \n",((double)(((endTimer.tv_sec  - startTimer.tv_sec) * 1000 + (endTimer.tv_usec - startTimer.tv_usec)/1000.0) + 0.5))/1000.0);
+  printf("sumBB:%+0.10e, sum:%+0.10e \n",checkSumBB/6.0062647801, checkSum/1.6745487066);
+
   return(0);
 }
 
@@ -537,12 +550,12 @@ void generateBB(double bb[NUMBEAD], double GaussRandArray[NUMu], gsl_rng *RanNum
   }
 
   xn=bb[NUMu]/((double)(NUMu));
-  #pragma omp parallel for
   for(n=1;n<NUMu;n++)
   {
     bb[n]-=((double)(n))*xn;
   }
   bb[NUMBEAD-1]=0.0l;
+
 }
 
 // ============================================
@@ -556,7 +569,6 @@ void renormBB(double bb[NUMBEAD])
   endPtCorr=gsl_pow_int(bb[0]-bb[NUMBEAD-1],2)/((double)(NUMu));
 
   sum=0.0l;
-  #pragma omp parallel for reduction(+:sum)
   for(n=0;n<NUMu;n++)
   {
     sum+=gsl_pow_int(bb[n]-bb[n+1],2);
@@ -569,10 +581,14 @@ void renormBB(double bb[NUMBEAD])
   // alpha is ~1 with an error of 10^-4 or 5 for sample configs. This makes the routine 
   //nondeterministic between Fortran and C
 
-  #pragma omp parallel for
   for(n=1;n<NUMu;n++)
   {
     bb[n]=alpha*bb[n]+term0+((double)(n-1))*term;
+  }
+
+  for(n=1;n<NUMu;n++)
+  {
+    checkSumBB = checkSumBB+bb[n];
   }
 }
 
@@ -910,7 +926,6 @@ void printDistance(config *newConfig, position *savePos)
   double tempSum;
 
   tempSum=0.0l;
-  #pragma omp parallel for private(i) reduction(+:tempSum)
   for(n=1;n<NUMBEAD-1;n++)
   {
     for(i=0;i<NUMDIM;i++)
@@ -976,7 +991,6 @@ void accumulateAverages(averages *tubeAve, config *newConfig, int *tau)
   ImIou=0.0;
 
   //calculate I and Iou. these are just numbers and are used below
-  #pragma omp parallel for reduction(+:ImIou)
   for(n=0;n<NUMBEAD;n++)
   {
     Fx=4.0*newConfig[n].pos[0]-4.0*gsl_pow_int(newConfig[n].pos[0],3);
@@ -989,7 +1003,6 @@ void accumulateAverages(averages *tubeAve, config *newConfig, int *tau)
 
 
   //Calculate dm/dtau and dBij/dtau and save to an array for averaging later
-  #pragma omp parallel for
   for(n=0;n<NUMBEAD;n++)
   {
     tubeAve[n].mean[0]+=newConfig[n].pos[0];
@@ -1017,6 +1030,11 @@ void accumulateAverages(averages *tubeAve, config *newConfig, int *tau)
     tubeAve[n].Deriv[4][0]+=ImIou*newConfig[n].posz[0]*newConfig[n].posz[1];
     tubeAve[n].Deriv[4][1]+=ImIou;
     tubeAve[n].Deriv[4][2]+=newConfig[n].posz[0]*newConfig[n].posz[1];
+
+  }
+  for(n=0;n<NUMBEAD;n++)
+  {
+    checkSum=checkSum+tubeAve[n].Deriv[0][0]+tubeAve[n].Deriv[2][0];
   }
 }
 
@@ -1026,7 +1044,6 @@ void normalizeAverages(averages *tubeAve, int *tau)
   int n,m,o;
   double oneOverTau=1.0l/((double)(*tau));
 
-  #pragma omp parallel for private(m)
   for(n=0;n<NUMBEAD;n++){
     for(m=0;m<2;m++){
       tubeAve[n].mean[m]*=oneOverTau;
