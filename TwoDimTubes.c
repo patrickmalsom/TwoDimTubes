@@ -223,6 +223,7 @@ void normalizeAverages(averages *tubeAve, int *tau);
 //simply dividing by the total number of accumulate average calls
 
 void tubesSteepestDescent(averages *tubeAve);
+void tubesSteepestDescentDeviation(averages *tubeAve, int *tau);
 
 // ==================================================================================
 //               MAIN Program
@@ -466,6 +467,7 @@ int main(int argc, char *argv[])
         fprintf(pStdOut,"rand=%+0.6f  Exp[ratio]=%+0.6f   dt= %+0.5e     acc= %i      rej= %i  \n",randUniform,exp(ratio/(2.0*TEMP)),DT,acc,rej);
 
       }
+      tubesSteepestDescentDeviation(tubeAve,&tau);
     }  //end MC loop
 
 
@@ -1060,6 +1062,31 @@ void normalizeAverages(averages *tubeAve, int *tau)
 }
 
 //============================================
+void tubesSteepestDescentDeviation(averages *tubeAve, int *tau)
+// calculate the gradient of the KL divergence and minimize it
+//passes a new set of parameters for the smooth functions defined in constants.h
+{
+  int n;
+  double tempMU1=0.0;
+  double tempSIGMA2=0.0;
+  double tempSIGMA3=0.0;
+  double dun;
+  double oneOverTau=1.0l/((double)(*tau));
+
+  for(n=0;n<NUMBEAD;n++)
+  {
+    dun=DU*((double)(n));
+    //mean integration
+    tempMU1+= meanxDParx1Func(dun)*(tubeAve[n].Deriv[0][0]*oneOverTau-tubeAve[n].Deriv[0][1]*oneOverTau*tubeAve[n].Deriv[0][2]*oneOverTau);
+    //B integration 
+    tempSIGMA2=tempSIGMA2+(BxxDParx2Func(dun)*(-tubeAve[n].Deriv[2][0]*oneOverTau+tubeAve[n].Deriv[2][1]*oneOverTau*tubeAve[n].Deriv[2][2]*oneOverTau));
+    tempSIGMA3+= BxxDParx3Func(dun)*(-tubeAve[n].Deriv[2][0]*oneOverTau+tubeAve[n].Deriv[2][1]*oneOverTau*tubeAve[n].Deriv[2][2]*oneOverTau);
+  }
+
+  printf("M1 S2 S3: %+0.10e  %+0.10e  %+0.10e \n",tempMU1*DU,tempSIGMA2*DU,tempSIGMA3*DU);
+}
+
+//============================================
 void tubesSteepestDescent(averages *tubeAve)
 // calculate the gradient of the KL divergence and minimize it
 //passes a new set of parameters for the smooth functions defined in constants.h
@@ -1076,8 +1103,8 @@ void tubesSteepestDescent(averages *tubeAve)
   gammaDescent[0]=0.0;
   gammaDescent[1]=0.0;
   gammaDescent[2]=0.0;
-  gammaDescent[3]=0.5;
-  gammaDescent[4]=0.5;
+  gammaDescent[3]=0.0;
+  gammaDescent[4]=0.0;
 
   for(n=0;n<NUMBEAD;n++)
   {
@@ -1097,6 +1124,5 @@ void tubesSteepestDescent(averages *tubeAve)
   SIGMA1= SIGMA1-gammaDescent[2]*tempSIGMA1*DU;
   SIGMA2= SIGMA2-gammaDescent[3]*tempSIGMA2*DU;
   SIGMA3= SIGMA3-gammaDescent[4]*tempSIGMA3*DU;
-  printf("DU: %+0.10e\n",DU);
-  printf("Gradients: M1: %+0.10e, M2: %+0.10e, S2: %+0.10e, S3: %+0.10e, \n",tempMU1,tempMU2,tempSIGMA2,tempSIGMA3);
+  printf("Gradients: M1: %+0.10e, M2: %+0.10e, S2: %+0.10e, S3: %+0.10e, \n",tempMU1*DU,tempMU2*DU,tempSIGMA2*DU,tempSIGMA3*DU);
 }
