@@ -11,4 +11,4 @@ export GSL_RNG_SEED=1234
 
 
 #run the executable with the input file
-./TwoDimTubes.out inputPos.dat 
+./TwoDimTubes.out inputPos.dat >out
