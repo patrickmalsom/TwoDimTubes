@@ -1,14 +1,26 @@
 #!/bin/bash
 
-#make clean and make again with -march compiler options
+#make clean and make again with -march compiler options for the specific machine
 make clean
 make
 
 #export a random number for the RNG seed
-#in gdb do: set env GSL_RNG_SEED 2344
-#export GSL_RNG_SEED=$(head -1 /dev/urandom |od -N 10 |awk '{print $2}') 
-export GSL_RNG_SEED=1234
+#in gdb do: set env GSL_RNG_SEED 1234
+export GSL_RNG_SEED=$(head -1 /dev/urandom |od -N 10 |awk '{print $2}') 
+#export GSL_RNG_SEED=1234
 
+run the executable with the input file
+./TwoDimTubes.out inputPos.dat >out
 
+<<<<<<< HEAD
 #run the executable with the input file
 ./TwoDimTubes.out inputPos.dat >out
+=======
+#for i in $(seq 10 5 50); do
+#  cp -v 2WellTubes-T0.15-pos0$(echo $i)0000.dat inputPos.dat
+#
+#  ./mkinputFile.sh
+#  export GSL_RNG_SEED=$(head -1 /dev/urandom |od -N 10 |awk '{print $2}') 
+#  ./TwoDimTubes.out inputPos.dat >out$i
+#done
+>>>>>>> deviations
