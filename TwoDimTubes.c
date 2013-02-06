@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <time.h>
+#include <sys/time.h>
 //OpenMP libraries
 #include <omp.h>
 //GNU Scientific Libraries
@@ -35,13 +35,8 @@
 // Incrimenter Definitions
 #define NUMMD     50        // Number of MD steps 
 //      NUMMD     ~3/(2*sqrt(2*PreDT*DU^2)) <- Approx optimal value of NUMMD
-<<<<<<< HEAD
 #define NUMMC     5000    // Number of Metropolis Hastings MC steps
 #define NUMTUBE   100        // Number of tube steepest descent steps
-=======
-#define NUMMC     10000    // Number of Metropolis Hastings MC steps
-#define NUMTUBE   1        // Number of tube steepest descent steps
->>>>>>> deviations
 
 // Constants for writing to stdout and config
 #define WRITESTDOUT  50       // How often to print to stdout (# of MD loops)
@@ -228,7 +223,6 @@ void normalizeAverages(averages *tubeAve, int *tau);
 //simply dividing by the total number of accumulate average calls
 
 void tubesSteepestDescent(averages *tubeAve);
-void tubesSteepestDescentDeviation(averages *tubeAve, int *tau);
 
 // ==================================================================================
 //               MAIN Program
@@ -472,7 +466,6 @@ int main(int argc, char *argv[])
         fprintf(pStdOut,"rand=%+0.6f  Exp[ratio]=%+0.6f   dt= %+0.5e     acc= %i      rej= %i  \n",randUniform,exp(ratio/(2.0*TEMP)),DT,acc,rej);
 
       }
-      tubesSteepestDescentDeviation(tubeAve,&tau);
     }  //end MC loop
 
 
@@ -1064,31 +1057,6 @@ void normalizeAverages(averages *tubeAve, int *tau)
       }
     }
   }
-}
-
-//============================================
-void tubesSteepestDescentDeviation(averages *tubeAve, int *tau)
-// calculate the gradient of the KL divergence and minimize it
-//passes a new set of parameters for the smooth functions defined in constants.h
-{
-  int n;
-  double tempMU1=0.0;
-  double tempSIGMA2=0.0;
-  double tempSIGMA3=0.0;
-  double dun;
-  double oneOverTau=1.0l/((double)(*tau));
-
-  for(n=0;n<NUMBEAD;n++)
-  {
-    dun=DU*((double)(n));
-    //mean integration
-    tempMU1+= meanxDParx1Func(dun)*(tubeAve[n].Deriv[0][0]*oneOverTau-tubeAve[n].Deriv[0][1]*oneOverTau*tubeAve[n].Deriv[0][2]*oneOverTau);
-    //B integration 
-    tempSIGMA2=tempSIGMA2+(BxxDParx2Func(dun)*(-tubeAve[n].Deriv[2][0]*oneOverTau+tubeAve[n].Deriv[2][1]*oneOverTau*tubeAve[n].Deriv[2][2]*oneOverTau));
-    tempSIGMA3+= BxxDParx3Func(dun)*(-tubeAve[n].Deriv[2][0]*oneOverTau+tubeAve[n].Deriv[2][1]*oneOverTau*tubeAve[n].Deriv[2][2]*oneOverTau);
-  }
-
-  printf("M1 S2 S3: %+0.10e  %+0.10e  %+0.10e \n",tempMU1*DU,tempSIGMA2*DU,tempSIGMA3*DU);
 }
 
 //============================================
