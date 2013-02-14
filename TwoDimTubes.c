@@ -21,7 +21,7 @@
 #include <gsl/gsl_math.h>
 
 //parameters for different potentials
-#include "./TwoDimTubesConstants.h"
+#include "./TwoDimTubes.h"
 
 //=============================================================================
 //                   Global Variables
