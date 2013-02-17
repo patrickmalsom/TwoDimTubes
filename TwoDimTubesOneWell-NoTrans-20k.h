@@ -1,6 +1,6 @@
 /*
  *   TwoDimTubesConstants.h
- *   Written Spring 2013 -- Patrick Malsom
+ *   Patrick Malsom
  *   Constants for Two Dimensional Tubes HMC
  */
 
@@ -27,8 +27,6 @@
 //current implimentation writes a file at every steepest descent step
 const char PotentialString[]="2WellTubes";// Potential Description 
 
-// Potential Function
-#define VFunc(x,y)           1.0l-2.0l*gsl_pow_int(x,2)+1.0l*gsl_pow_int(x,4)+1.0l*gsl_pow_int(y,2)
 
 //=============================================================================
 //                   Tubes Definitions 
@@ -38,16 +36,24 @@ const char PotentialString[]="2WellTubes";// Potential Description
 Cdef[fun__]:=StringReplace[StringReplace[ToString[CForm[fun]],{"Sinh("->"sinh(","Cosh("->"cosh(","Tanh("->"tanh(","Csch("->"1/sinh(","Sech("->"1/cosh(","Coth("->"1/tanh(","Power("->"pow("," "->""}],"pow(E,"->"exp("]
 */
 
+// Potential Function
+#define VFunc(x,y)           (x-1)*(x-1)+y*y
+//potentials for calculation of <I-Iou>
+#define FxFunc(x,y)          2.0-2.0*x
+#define ddVxFunc(x,y)        2.0
+#define FyFunc(x,y)          -2.0*y
+#define ddVyFunc(x,y)        2.0
+
 // Smooth functions for use in Tubes HMC
-#define meanxFunc(t)      1.0
-#define meanyFunc(t)      0.0
-#define dmeanxFunc(t)     0.0
-#define dmeanyFunc(t)     0.0
-#define ddmeanxFunc(t)    0.0
-#define ddmeanyFunc(t)    0.0
-#define BxxFunc(t)        4.0
-#define ByyFunc(t)        4.0
-#define BxyFunc(t)        0.0
+#define meanxFunc(t)         1.0
+#define meanyFunc(t)         0.0
+#define dmeanxFunc(t)        0.0
+#define dmeanyFunc(t)        0.0
+#define ddmeanxFunc(t)       0.0
+#define ddmeanyFunc(t)       0.0
+#define BxxFunc(t)           4.0
+#define ByyFunc(t)           4.0
+#define BxyFunc(t)           0.0
 
 //derivatives wrt the parameters
 #define meanxDParx1Func(t)   0.0

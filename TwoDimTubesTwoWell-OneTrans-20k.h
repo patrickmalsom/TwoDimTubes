@@ -27,9 +27,6 @@
 //current implimentation writes a file at every steepest descent step
 const char PotentialString[]="2WellTubes";// Potential Description 
 
-// Potential Function
-#define VFunc(x,y)           1.0l-2.0l*gsl_pow_int(x,2)+1.0l*gsl_pow_int(x,4)+1.0l*gsl_pow_int(y,2)
-
 //=============================================================================
 //                   Tubes Definitions 
 //=============================================================================
@@ -37,6 +34,14 @@ const char PotentialString[]="2WellTubes";// Potential Description
 /* Mathematica code to generate the definitions (because CForm is broken...)
 Cdef[fun__]:=StringReplace[StringReplace[ToString[CForm[fun]],{"Sinh("->"sinh(","Cosh("->"cosh(","Tanh("->"tanh(","Csch("->"1/sinh(","Sech("->"1/cosh(","Coth("->"1/tanh(","Power("->"pow("," "->""}],"pow(E,"->"exp("]
 */
+
+// Potential Function
+#define VFunc(x,y)           1.0l-2.0l*gsl_pow_int(x,2)+1.0l*gsl_pow_int(x,4)+1.0l*gsl_pow_int(y,2)
+//potentials for calculation of <I-Iou>
+#define FxFunc(n)            4.0*newConfig[n].pos[0]-4.0*gsl_pow_int(newConfig[n].pos[0],3)
+#define ddVxFunc(n)          -4.0+12.0*newConfig[n].pos[0]*newConfig[n].pos[0];
+#define FyFunc(n)            -2.0*newConfig[n].pos[1];
+#define ddVyFunc(n)          2.0
 
 // Smooth functions for use in Tubes HMC
 #define meanxFunc(t)      MU2*1/tanh(5.*MU1)*tanh(MU1*(-5.+t))
@@ -56,3 +61,4 @@ Cdef[fun__]:=StringReplace[StringReplace[ToString[CForm[fun]],{"Sinh("->"sinh(",
 #define BxxDParx1Func(t)     2*(1-exp(-(SIGMA3*pow(-5.+t,2))))*(SIGMA1+(-SIGMA1+SIGMA2)/exp(SIGMA3*pow(-5.+t,2)))
 #define BxxDParx2Func(t)     (2*(SIGMA1+(-SIGMA1+SIGMA2)*exp(-SIGMA3*pow(-5.+t,2))))*exp(-SIGMA3*pow(-5.+t,2))
 #define BxxDParx3Func(t)     (-2*(-SIGMA1+SIGMA2)*(SIGMA1+(-SIGMA1+SIGMA2)/exp(SIGMA3*pow(-5.+t,2)))*pow(-5.+t,2))/exp(SIGMA3*pow(-5.+t,2)) 
+
