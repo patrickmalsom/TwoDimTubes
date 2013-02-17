@@ -943,7 +943,12 @@ void accumulateAverages(averages *tubeAve, config *newConfig, int *tau)
   //calculate I and Iou. these are just numbers and are used below
   for(n=0;n<NUMBEAD;n++)
   {
-    ImIou+=(DU*(0.5*(FxFunc(n)*FxFunc(n)+FyFunc(n)*FyFunc(n))-TEMP*(ddVxFunc(n)+ddVyFunc(n)))-DU*newConfig[n].G);
+    Fx=FxFunc(newConfig[n].pos[0],newConfig[n].pos[1]);
+    ddVx=ddVxFunc(newConfig[n].pos[0],newConfig[n].pos[1]);
+    Fy=FyFunc(newConfig[n].pos[0],newConfig[n].pos[1]);
+    ddVy=ddVyFunc(newConfig[n].pos[0],newConfig[n].pos[1]);
+
+    ImIou+=(DU*(0.5*(Fx*Fx+Fy*Fy)-TEMP*(ddVx+ddVy))-DU*newConfig[n].G);
   }
 
 
@@ -1043,3 +1048,4 @@ void tubesSteepestDescent(averages *tubeAve)
   SIGMA2= SIGMA2-gammaDescent[3]*tempSIGMA2*DU;
   SIGMA3= SIGMA3-gammaDescent[4]*tempSIGMA3*DU;
   printf("Gradients: M1: %+0.10e, M2: %+0.10e, S2: %+0.10e, S3: %+0.10e, \n",tempMU1*DU,tempMU2*DU,tempSIGMA2*DU,tempSIGMA3*DU);
+}
