@@ -36,12 +36,12 @@ Cdef[fun__]:=StringReplace[StringReplace[ToString[CForm[fun]],{"Sinh("->"sinh(",
 */
 
 // Potential Function
-#define VFunc(x,y)           1.0l-2.0l*gsl_pow_int(x,2)+1.0l*gsl_pow_int(x,4)+1.0l*gsl_pow_int(y,2)
+#define VFunc(x,y)           1.0-2.0*x*x+1.0*x*x*x*x+1.0*y*y
 //potentials for calculation of <I-Iou>
-#define FxFunc(n)            4.0*newConfig[n].pos[0]-4.0*gsl_pow_int(newConfig[n].pos[0],3)
-#define ddVxFunc(n)          -4.0+12.0*newConfig[n].pos[0]*newConfig[n].pos[0];
-#define FyFunc(n)            -2.0*newConfig[n].pos[1];
-#define ddVyFunc(n)          2.0
+#define FxFunc(x,y)            4.0*x-4.0*x*x*x
+#define ddVxFunc(x,y)          -4.0+12.0*x*x
+#define FyFunc(x,y)            -2.0*y
+#define ddVyFunc(x,y)          2.0
 
 // Smooth functions for use in Tubes HMC
 #define meanxFunc(t)      MU2*1/tanh(5.*MU1)*tanh(MU1*(-5.+t))
