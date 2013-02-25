@@ -1,7 +1,7 @@
 CC=gcc
 #order of arguments: Temp, sigma, sigma^2
 CFLAGS=-Wall -Warray-bounds -fopenmp -march=native -O2 -g
-LFLAGS=-fopenmp -lm -lgsl
+LFLAGS=-fopenmp -lm -lgsl -lgslcblas
 
 all: TwoDimTubes
 
