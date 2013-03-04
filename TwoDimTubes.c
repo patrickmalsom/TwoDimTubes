@@ -35,7 +35,7 @@ const double DT=PREDT*DU*DU;
 double MU1 = 2.00; // steepness of the transition
 double MU2 = 0.97; // well location at finite temp
 
-double SIGMA1 = 7.52; // approx well hessian
+double SIGMA1 = 8.2; // approx well hessian
 double SIGMA2 = -0.90;
 double SIGMA3 = 2.72;
 
