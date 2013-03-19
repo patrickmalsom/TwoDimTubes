@@ -97,7 +97,7 @@ Print["#define BxxDParx3Func(t)      (-2*(-SIGMA1+SIGMA2)*(SIGMA1+(-SIGMA1+SIGMA
 #define BxyFunc(t)    0.
 
 //derivatives wrt the parameters
-#define meanxDParx1Func(t)     -5.*MU2*1/tanh(5.*MU1)*gsl_pow_int(1/cosh(MU1*(-5.+t)),2)+MU2*t*1/tanh(5.*MU1)*gsl_pow_int(1/cosh(MU1*(-5.+t)),2)-5.*MU2*gsl_pow_int(Csch(5.*MU1),2)*tanh(MU1*(-5.+t))
+#define meanxDParx1Func(t)     -5.*MU2*1/tanh(5.*MU1)*gsl_pow_int(1/cosh(MU1*(-5.+t)),2)+MU2*t*1/tanh(5.*MU1)*gsl_pow_int(1/cosh(MU1*(-5.+t)),2)-5.*MU2*gsl_pow_int(1/sinh(5.*MU1),2)*tanh(MU1*(-5.+t))
 #define meanxDParx2Func(t)     1/tanh(5.*MU1)*tanh(MU1*(-5.+t))
 #define BxxDParx1Func(t)      2*(1-exp(-(SIGMA3*pow(-5.+t,2))))*(SIGMA1+(-SIGMA1+SIGMA2)/exp(SIGMA3*pow(-5.+t,2)))
 #define BxxDParx2Func(t)      (2*(SIGMA1+(-SIGMA1+SIGMA2)*exp(-SIGMA3*pow(-5.+t,2))))*exp(-SIGMA3*pow(-5.+t,2))
