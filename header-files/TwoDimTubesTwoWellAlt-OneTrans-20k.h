@@ -31,55 +31,13 @@ const char PotentialString[]="2WellTubesAlt";// Potential Description
 //                   Tubes Definitions 
 //=============================================================================
 
-/* Mathematica code to generate the definitions (because CForm is broken...)
-Cdef[fun__]:=StringReplace[StringReplace[ToString[CForm[Expand[fun]]],{"Sinh("->"sinh(","Cosh("->"cosh(","Tanh("->"tanh(","Csch("->"1/sinh(","Sech("->"1/cosh(","Coth("->"1/tanh(","Power("->"gsl_pow_int("," "->""}],"pow(E,"->"exp("]
-
-V=(x^2-2.)^2+y^2*(x^2+1.)/2.;
-mx=MU2*Tanh[MU1*(t-5.)]/Tanh[5.*MU1];
-my=0.;
-
-Print["//Potential Function"]
-Print["#define VFunc(x,y)      "<>Cdef[V]]
-Print[""]
-
-Print["//potentials for calculation of<I-Iou>"]
-Print["#define FxFunc(x,y)      "<>Cdef[-D[V,x]]]
-Print["#define ddVxFunc(x,y)     "<>Cdef[D[D[V,x],x]]]
-Print["#define FyFunc(x,y)     "<>Cdef[-D[V,y]]]
-Print["#define ddVyFunc(x,y)      "<>Cdef[D[V,{y,2}]]]
-Print[""]
-
-Print["//Smooth functions for use in Tubes HMC"]
-Print["#define meanxFunc(t)   "<>Cdef[mx]]
-Print["#define meanyFunc(t)   "<>Cdef[my]]
-Print["#define dmeanxFunc(t)   "<>Cdef[D[mx,t]]]
-Print["#define dmeanyFunc(t)      "<>Cdef[D[my,t]]]
-Print["#define ddmeanxFunc(t)     "<>Cdef[D[mx,{t,2}]]]
-Print["#define ddmeanyFunc(t)     "<>Cdef[D[my,{t,2}]]]
-Print[""]
-
-Print["//B parameters"]
-Print["//#define BxxFunc(t)    "<>Cdef[D[V,{x,2}]^2/.{x->1,y->0}]]
-Print["#define BxxFunc(t) pow(SIGMA1+(-SIGMA1+SIGMA2)/exp(SIGMA3*pow(-5.+t,2)),2)     "]
-Print["#define ByyFunc(t)     "<>Cdef[D[V,{y,2}]^2/.{x->1,y->0}]]
-Print["#define BxyFunc(t)    "<>Cdef[D[D[V,x],y]^2/.{x->1,y->0}]]
-Print[""]
-
-Print["//derivatives wrt the parameters"]
-Print["#define meanxDParx1Func(t)     "<>Cdef[D[mx,MU1]]]
-Print["#define meanxDParx2Func(t)     "<>Cdef[D[mx,MU2]]]
-Print["#define BxxDParx1Func(t)      2*(1-exp(-(SIGMA3*pow(-5.+t,2))))*(SIGMA1+(-SIGMA1+SIGMA2)/exp(SIGMA3*pow(-5.+t,2)))"]
-Print["#define BxxDParx2Func(t)      (2*(SIGMA1+(-SIGMA1+SIGMA2)*exp(-SIGMA3*pow(-5.+t,2))))*exp(-SIGMA3*pow(-5.+t,2))"]
-Print["#define BxxDParx3Func(t)      (-2*(-SIGMA1+SIGMA2)*(SIGMA1+(-SIGMA1+SIGMA2)/exp(SIGMA3*pow(-5.+t,2)))*pow(-5.+t,2))/exp(SIGMA3*pow(-5.+t,2))"]
-*/
-
 //Potential Function
-#define VFunc(x,y)      4.-4.*gsl_pow_int(x,2)+gsl_pow_int(x,4)+0.5*gsl_pow_int(y,2)+0.5*gsl_pow_int(x,2)*gsl_pow_int(y,2)
+#define VFunc(x,y)      4.+gsl_pow_int(x,4)+0.5*gsl_pow_int(y,2)+gsl_pow_int(x,2)*(-4.+0.5*gsl_pow_int(y,2))
 
 //potentials for calculation of<I-Iou>
-#define FxFunc(x,y)      8.*x-4*gsl_pow_int(x,3)-1.*x*gsl_pow_int(y,2)
+#define FxFunc(x,y)      x*(8.-4.*gsl_pow_int(x,2)-1.*gsl_pow_int(y,2))
 #define ddVxFunc(x,y)     -8.+12*gsl_pow_int(x,2)+1.*gsl_pow_int(y,2)
-#define FyFunc(x,y)     -1.*y-1.*gsl_pow_int(x,2)*y
+#define FyFunc(x,y)     (-1.-1.*gsl_pow_int(x,2))*y
 #define ddVyFunc(x,y)      1.+1.*gsl_pow_int(x,2)
 
 //Smooth functions for use in Tubes HMC
@@ -91,14 +49,14 @@ Print["#define BxxDParx3Func(t)      (-2*(-SIGMA1+SIGMA2)*(SIGMA1+(-SIGMA1+SIGMA
 #define ddmeanyFunc(t)     0
 
 //B parameters
-//#define BxxFunc(t)    16.
-#define BxxFunc(t) pow(SIGMA1+(-SIGMA1+SIGMA2)/exp(SIGMA3*pow(-5.+t,2)),2)     
-#define ByyFunc(t)     4.
-#define BxyFunc(t)    0.
+#define BxxFunc(t)   gsl_pow_int((-1+exp(SIGMA3*(-5.+t)))*SIGMA1+SIGMA2,2)/exp(2.*SIGMA3*(-5.+t))
+#define ByyFunc(t)   4.
+#define BxyFunc(t)   0.
 
 //derivatives wrt the parameters
-#define meanxDParx1Func(t)     -5.*MU2*1/tanh(5.*MU1)*gsl_pow_int(1/cosh(MU1*(-5.+t)),2)+MU2*t*1/tanh(5.*MU1)*gsl_pow_int(1/cosh(MU1*(-5.+t)),2)-5.*MU2*gsl_pow_int(1/sinh(5.*MU1),2)*tanh(MU1*(-5.+t))
+#define meanxDParx1Func(t)     MU2*((-5.+t)*1/tanh(5.*MU1)*gsl_pow_int(1/cosh(MU1*(-5.+t)),2)-5.*gsl_pow_int(1/sinh(5.*MU1),2)*tanh(MU1*(-5.+t)))
 #define meanxDParx2Func(t)     1/tanh(5.*MU1)*tanh(MU1*(-5.+t))
-#define BxxDParx1Func(t)      2*(1-exp(-(SIGMA3*pow(-5.+t,2))))*(SIGMA1+(-SIGMA1+SIGMA2)/exp(SIGMA3*pow(-5.+t,2)))
-#define BxxDParx2Func(t)      (2*(SIGMA1+(-SIGMA1+SIGMA2)*exp(-SIGMA3*pow(-5.+t,2))))*exp(-SIGMA3*pow(-5.+t,2))
-#define BxxDParx3Func(t)      (-2*(-SIGMA1+SIGMA2)*(SIGMA1+(-SIGMA1+SIGMA2)/exp(SIGMA3*pow(-5.+t,2)))*pow(-5.+t,2))/exp(SIGMA3*pow(-5.+t,2))
+#define BxxDParx1Func(t)        (2*(-1+exp(SIGMA3*(-5.+t)))*((-1+exp(SIGMA3*(-5.+t)))*SIGMA1+SIGMA2))/exp(2.*SIGMA3*(-5.+t))
+#define BxxDParx2Func(t)      (2*((-1+exp(SIGMA3*(-5.+t)))*SIGMA1+SIGMA2))/exp(2.*SIGMA3*(-5.+t))
+#define BxxDParx3Func(t)      (gsl_pow_int(SIGMA2,2)*(10.-2.*t)+SIGMA1*SIGMA2*(-20.+exp(SIGMA3*(-5.+t))*(10.-2.*t)+4.*t)+gsl_pow_int(SIGMA1,2)*(10.-2.*t+exp(SIGMA3*(-5.+t))*(-10.+2.*t)))/exp(2.*SIGMA3*(-5.+t))
+
