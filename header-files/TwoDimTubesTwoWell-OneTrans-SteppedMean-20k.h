@@ -37,11 +37,11 @@ const char PotentialString[]="2WellTubes";// Potential Description
 #define ddVyFunc(x,y)      2
 
 //Smooth functions for use in Tubes HMC
-#define meanxFunc(t)   (7.5-1.5*t+0.967*exp(MU3*gsl_pow_int(-5.+t,2))*tanh(MU1*(-5+t)))/exp(1.*MU3*gsl_pow_int(-5.+t,2))
+#define meanxFunc(t)   (7.5-1.5*t+0.967*exp(MU2*gsl_pow_int(-5.+t,2))*tanh(MU1*(-5+t)))/exp(1.*MU2*gsl_pow_int(-5.+t,2))
 #define meanyFunc(t)   0.
-#define dmeanxFunc(t)   (-1.5+MU3*gsl_pow_int(8.660254037844386-1.7320508075688772*t,2)+0.967*exp(MU3*gsl_pow_int(-5.+t,2))*MU1*gsl_pow_int(1/cosh(MU1*(-5+t)),2))/exp(1.*MU3*gsl_pow_int(-5.+t,2))
+#define dmeanxFunc(t)   (-1.5+MU2*gsl_pow_int(8.660254037844386-1.7320508075688772*t,2)+0.967*exp(MU2*gsl_pow_int(-5.+t,2))*MU1*gsl_pow_int(1/cosh(MU1*(-5+t)),2))/exp(1.*MU2*gsl_pow_int(-5.+t,2))
 #define dmeanyFunc(t)      0
-#define ddmeanxFunc(t)     (MU3*(-45.+MU3*gsl_pow_int(9.085602964160698-1.8171205928321397*t,3)+9.*t)-1.934*exp(MU3*gsl_pow_int(-5.+t,2))*gsl_pow_int(MU1,2)*gsl_pow_int(1/cosh(MU1*(-5+t)),2)*tanh(MU1*(-5+t)))/exp(1.*MU3*gsl_pow_int(-5.+t,2))
+#define ddmeanxFunc(t)     (MU2*(-45.+MU2*gsl_pow_int(9.085602964160698-1.8171205928321397*t,3)+9.*t)-1.934*exp(MU2*gsl_pow_int(-5.+t,2))*gsl_pow_int(MU1,2)*gsl_pow_int(1/cosh(MU1*(-5+t)),2)*tanh(MU1*(-5+t)))/exp(1.*MU2*gsl_pow_int(-5.+t,2))
 #define ddmeanyFunc(t)     0
 
 //B parameters
@@ -51,7 +51,7 @@ const char PotentialString[]="2WellTubes";// Potential Description
 
 //derivatives wrt the parameters
 #define meanxDParx1Func(t)     (-4.835+0.967*t)*gsl_pow_int(1/cosh(MU1*(-5+t)),2)
-#define meanxDParx2Func(t)     0
+#define meanxDParx2Func(t)     0.+gsl_pow_int(-5.723571212766659+1.1447142425533319*t,3)/exp(1.*MU2*gsl_pow_int(-5.+t,2))
 #define BxxDParx1Func(t)        (2*(-1+exp(SIGMA3*(-5.+t)))*((-1+exp(SIGMA3*(-5.+t)))*SIGMA1+SIGMA2))/exp(2.*SIGMA3*(-5.+t))
 #define BxxDParx2Func(t)      (2*((-1+exp(SIGMA3*(-5.+t)))*SIGMA1+SIGMA2))/exp(2.*SIGMA3*(-5.+t))
 #define BxxDParx3Func(t)      (gsl_pow_int(SIGMA2,2)*(10.-2.*t)+SIGMA1*SIGMA2*(-20.+exp(SIGMA3*(-5.+t))*(10.-2.*t)+4.*t)+gsl_pow_int(SIGMA1,2)*(10.-2.*t+exp(SIGMA3*(-5.+t))*(-10.+2.*t)))/exp(2.*SIGMA3*(-5.+t))
