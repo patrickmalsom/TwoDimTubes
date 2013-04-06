@@ -31,6 +31,7 @@ const int NUMl=NUMBEAD-2;  //used in Linverse function
 
 const double DT=PREDT*DU*DU;
 
+/*
 // Initial Parameters for the means. To be optimized using KL gradient descent.
 double MU1 = 2.00; // steepness of the transition
 double MU2 = 0.9755; // well location at finite temp
@@ -38,6 +39,7 @@ double MU2 = 0.9755; // well location at finite temp
 double SIGMA1 = 8.28537; // approx well hessian
 double SIGMA2 = -0.90;
 double SIGMA3 = 2.72;
+*/
 
 FILE *pStdOut;
 
