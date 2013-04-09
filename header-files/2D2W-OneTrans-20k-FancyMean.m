@@ -5,7 +5,7 @@ NUMDIM = 2;           (* Spacial Dimensions *)
 NUMBEAD = 20001;      (* Path Points *)
 DU = 0.0005;          (* path time step size *)
 PREDT = 6000.0;       (* DT=PreDT*DU^2 (path time) *)
-TEMP = 0.15;          (* temperature *)
+TEMPERATURE = 0.15;   (* temperature *)
 NUMMD = 50;           (* Number of MD steps  ~3/(2*sqrt(2*PreDT*DU^2)) *)
 NUMMC = 5000;         (* Number of Metropolis Hastings MC steps *)
 NUMTUBE = 100;        (* Number of tube steepest descent steps *)
@@ -20,7 +20,7 @@ sigma2 = -0.90; (*  *)
 sigma3 = 2.72; (*  *)
 
 (* Definitions of the parameterized functions *)
-V=(x^2-2.)^2+y^2;
+V=(x^2-1.)^2+y^2;
 mx=-0.855745 E^(-14.845 (-5. + t)^2) (-5. + t) + 0.631037 (E^(-2.57233 (-5 + t)^2))^1.12036 (-5. + t) + 0.967 Tanh[2. (-5. + t)]
 my=0.;
 Bxx=(SIGMA1+(-SIGMA1+SIGMA2)/Exp[SIGMA3*(t-5.)^2])^2

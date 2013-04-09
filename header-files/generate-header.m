@@ -17,7 +17,7 @@ GenHeader[]:=Module[{},
   WriteString[file," \n"];
 
   WriteString[file,"// Temperature Definition \n"];
-  WriteString[file,"#define TEMP      "<>ToString[TEMP]<>" \n"];
+  WriteString[file,"#define TEMP      "<>ToString[TEMPERATURE]<>" \n"];
   WriteString[file," \n"];
 
   WriteString[file,"// Incrimenter Definitions \n"];
@@ -53,6 +53,8 @@ GenHeader[]:=Module[{},
   WriteString[file,"#define ddVxFunc(x,y)     "<>Cdef[D[D[V,x],x]],"\n"];
   WriteString[file,"#define FyFunc(x,y)     "<>Cdef[-D[V,y]],"\n"];
   WriteString[file,"#define ddVyFunc(x,y)      "<>Cdef[D[V,{y,2}]],"\n"];
+  WriteString[file,"#define gradGxFunc(x,y)      "<>Cdef[Simplify[Expand[D[0.5*(D[V,x]^2+D[V,y]^2)-TEMP*(D[V,{x,2}]+D[V,{y,2}]),x]]]],"\n"];
+  WriteString[file,"#define gradGyFunc(x,y)      "<>Cdef[Simplify[Expand[D[0.5*(D[V,x]^2+D[V,y]^2)-TEMP*(D[V,{x,2}]+D[V,{y,2}]),y]]]],"\n"];
   WriteString[file,"","\n"];
 
   WriteString[file,"//Smooth functions for use in Tubes HMC","\n"];

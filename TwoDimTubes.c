@@ -62,7 +62,7 @@ typedef struct _averages
   double mean[2];
   double meanB[3];
   double Deriv[5][3];
-  double gradG[2]
+  double gradG[2];
 } averages;
 
 //Stores positions and all potentials
@@ -948,8 +948,6 @@ void accumulateAverages(averages *tubeAve, config *newConfig, int *tau)
   *tau=*tau+1;
 
   ImIou=0.0;
-  gradGx=0.0;
-  gradGy=0.0;
 
   //calculate I and Iou. these are just numbers and are used below
   for(n=0;n<NUMBEAD;n++)
@@ -962,13 +960,12 @@ void accumulateAverages(averages *tubeAve, config *newConfig, int *tau)
     ImIou+=(DU*(0.5*(Fx*Fx+Fy*Fy)-TEMP*(ddVx+ddVy))-DU*newConfig[n].G);
   }
 
+  //calculate grad G
   for(n=0;n<NUMBEAD;n++)
   {
-    //calculate grad G
-    tubeAve[n].gradG[0]=gradGxFunc(newConfig[n].pos[0],newConfig[n].pos[1]);
-    tubeAve[n].gradG[1]=gradGyFunc(newConfig[n].pos[0],newConfig[n].pos[1]);
+    tubeAve[n].gradG[0]+=gradGxFunc(newConfig[n].pos[0],newConfig[n].pos[1]);
+    tubeAve[n].gradG[1]+=gradGyFunc(newConfig[n].pos[0],newConfig[n].pos[1]);
   }
-
 
   //Calculate dm/dtau and dBij/dtau and save to an array for averaging later
   for(n=0;n<NUMBEAD;n++)
@@ -1025,7 +1022,7 @@ void normalizeAverages(averages *tubeAve, int *tau)
       }
     }
     for(m=0;m<2;m++){
-      tubeAve[n].gradg[m]=tubeAve[n].gradG[m]*oneOverTau;
+      tubeAve[n].gradG[m]=tubeAve[n].gradG[m]*oneOverTau;
     }
   }
 }
