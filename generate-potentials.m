@@ -2,14 +2,14 @@
 
 (* Mathematica script to generate potentials for the c header files *)
 
-V=(x^2-2.)^2+y^2*(x^2+1.)/2.;
-mx=MU2*Tanh[MU1*(t-5.)]/Tanh[5.*MU1];
-my=0.;
-Bxx=(SIGMA1+(-SIGMA1+SIGMA2)/Exp[SIGMA3*(t-5.)])^2
+V=(x^2-1.0)^2+y^2;
+mx=MU2*Tanh[MU1*(t-5.0)]/Tanh[5.0*MU1];
+my=0.0;
+Bxx=(SIGMA1+(-SIGMA1+SIGMA2)/Exp[SIGMA3*(t-5.0)^2])^2
 Byy=D[V,{y,2}]^2/.{x->1,y->0}
 Bxy=D[D[V,y],x]^2/.{x->1,y->0}
 
-Cdef[fun__]:=StringReplace[StringReplace[ToString[CForm[FullSimplify[Expand[fun]]]],{"Sinh("->"sinh(","Cosh("->"cosh(","Tanh("->"tanh(","Csch("->"1/sinh(","Sech("->"1/cosh(","Coth("->"1/tanh(","Power("->"gsl_pow_int("," "->""}],"gsl_pow_int(E,"->"exp("]
+Cdef[fun__]:=StringReplace[StringReplace[ToString[CForm[FullSimplify[Expand[fun]]]],{"Sinh("->"sinh(","Cosh("->"cosh(","Tanh("->"tanh(","Csch("->"1/sinh(","Sech("->"1/cosh(","Coth("->"1/tanh(","Power("->"pow("," "->""}],"pow(E,"->"exp("]
 (* takes a regular mathematica function and turns it into a c function (uses gsl_pow_int) *)
 
 Print["//Potential Function"]
