@@ -5,7 +5,7 @@ Cdef[fun__]:=StringReplace[StringReplace[ToString[CForm[FullSimplify[Expand[fun]
 file=OpenWrite["./../TwoDimTubes.h"];
 
 (* Definitions of the parameterized functions *)
-V=(x^2-2.)^2+y^2*(x^2+1.)/2.;
+V=(x^2-2.)^2+y^2;
 mx=-0.855745 E^(-14.845 (-5. + t)^2) (-5. + t) + 0.631037 (E^(-2.57233 (-5 + t)^2))^1.12036 (-5. + t) + 0.967 Tanh[2. (-5. + t)]
 my=0.;
 Bxx=(SIGMA1+(-SIGMA1+SIGMA2)/Exp[SIGMA3*(t-5.)^2])^2
@@ -13,7 +13,6 @@ Byy=D[V,{y,2}]^2/.{x->1,y->0}
 Bxy=D[D[V,y],x]^2/.{x->1,y->0}
 
 (* Constants *)
-
 
 WriteString[file,"// TwoDimTubes.h - Constants for Two Dimensional Tubes HMC \n"]
 WriteString[file,"// ============================= Preprocessor Definitions ============================= \n"]
@@ -89,4 +88,5 @@ WriteString[file,"#define BxxDParx2Func(t)      "<>Cdef[D[Bxx,SIGMA2]],"\n"]
 WriteString[file,"#define BxxDParx3Func(t)      "<>Cdef[D[Bxx,SIGMA3]],"\n"]
 
 Close[file];
+
 Quit[];
