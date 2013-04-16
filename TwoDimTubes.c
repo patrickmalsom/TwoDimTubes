@@ -367,7 +367,7 @@ int main(int argc, char *argv[])
       //     Start of MD Loop: This loop needs to be focused on for parallelization
       // ==================================================================================
  
-      for(MDloopi=1;MDloopi<=NUMMD; MDloopi++)
+      for(MDloopi=1;MDloopi<=NUMMD-24+rand()%50; MDloopi++)
       {
         //rotate the configuration        
         rotateConfig(&configOld, &configCurrent, &configNew);
