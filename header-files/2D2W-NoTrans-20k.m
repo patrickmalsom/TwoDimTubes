@@ -4,7 +4,7 @@
 NUMDIM = 2;           (* Spacial Dimensions *)
 NUMBEAD = 20001;      (* Path Points *)
 DU = 0.0005;          (* path time step size *)
-PREDT = 6000.0;       (* DT=PreDT*DU^2 (path time) *)
+PREDT = 1500.0;       (* DT=PreDT*DU^2 (path time) *)
 TEMPERATURE = 0.15;   (* temperature *)
 NUMMD = 50;           (* Number of MD steps  ~3/(2*sqrt(2*PreDT*DU^2)) *)
 NUMMC = 10000;         (* Number of Metropolis Hastings MC steps *)
