@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
   //Incrimenter Declarations
   int i;
   int acc,rej; // trackers for acceptance of MHMC loop
-  int MDloopi,MCloopi, tubeloopi; 
+  int MDloopi, MDloopirand, MCloopi, tubeloopi; 
   int tau=0; //incrimenter used in the averaging for normalization
 
   //Vectors for doing the L Inverse
@@ -366,8 +366,8 @@ int main(int argc, char *argv[])
       // ==================================================================================
       //     Start of MD Loop: This loop needs to be focused on for parallelization
       // ==================================================================================
- 
-      for(MDloopi=1;MDloopi<=NUMMD-24+rand()%50; MDloopi++)
+      MDloopirand=(NUMMD-24+(rand()%50));
+      for(MDloopi=1;MDloopi<=MDloopirand; MDloopi++)
       {
         //rotate the configuration        
         rotateConfig(&configOld, &configCurrent, &configNew);
@@ -383,13 +383,8 @@ int main(int argc, char *argv[])
         LInverse(configNew, vecdg, veci1, veci0);
  
         //calculate the average distance moved in the step and print to std out
-        if(MDloopi%WRITESTDOUT==0){
- 
-          if(MCloopi%10==0){
-            fprintf(pStdOut,"MDi: %.5d | MDi*h: %0.5f | MD ratio: %+0.5f | distance: ",MDloopi,MDloopi*sqrt(2*DT),ratio); //newline is in printDistance function
-          printDistance(configNew, savePos);
-          }
-        }
+        fprintf(pStdOut,"MDi: %.5d | MDi*h: %0.5f | MD ratio: %+0.5f \n",MDloopi,MDloopi*sqrt(2*DT),ratio); 
+        //printDistance(configNew, savePos);
  
         //acc ratio of newconfig
         ProbAccRatio(configCurrent, configNew, &ratio);
@@ -962,7 +957,7 @@ void accumulateAverages(averages *tubeAve, config *newConfig, int *tau)
 
     ImIou+=(DU*(0.5*(Fx*Fx+Fy*Fy)-TEMP*(ddVx+ddVy))-DU*newConfig[n].G);
 
-    tubeAve[n].G0+=(DU*(0.5*(Fx*Fx+Fy*Fy)-TEMP*(ddVx+ddVy)));
+    tubeAve[n].G0+=((0.5*(Fx*Fx+Fy*Fy)-TEMP*(ddVx+ddVy)));
   }
 
   //calculate grad G
