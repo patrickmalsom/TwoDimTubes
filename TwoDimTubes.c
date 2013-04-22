@@ -290,6 +290,26 @@ int main(int argc, char *argv[])
   }
 
   //===============================================================
+  // Reading the mean configuration file into mean lists
+  //===============================================================
+  //Input file to be read as first command line argument
+  if(argv[2]==NULL) { 
+    printf("No mean/B file. Exiting!\n");
+    exit(-1);
+  }
+  else {
+    printf("Mean input file: %s\n",argv[2]);
+  }
+  lineNum = 0;
+  FILE *fptrmean = fopen(argv[2],"r");
+  while( EOF != fscanf(fptrmean,"%lf %lf %lf",
+  &(configCurrent[lineNum].posm[0]),
+  &(configCurrent[lineNum].posdm[0]),
+  &(configCurrent[lineNum].posddm[0])) ){
+    lineNum++;
+  }
+
+  //===============================================================
   // GNU Scientific Library Random Number Setup
   //===============================================================
   // Example shell command$ GSL_RNG_SEED=123 ./a.out
@@ -924,11 +944,11 @@ void initMeans(config *currentConfig)
   double dun;
   for(n=0;n<NUMBEAD;n++){
     dun=DU*((double)(n));
-    currentConfig[n].posm[0]=meanxFunc(dun);
+    //currentConfig[n].posm[0]=meanxFunc(dun);
     currentConfig[n].posm[1]=meanyFunc(dun);
-    currentConfig[n].posdm[0]=dmeanxFunc(dun);
+    //currentConfig[n].posdm[0]=dmeanxFunc(dun);
     currentConfig[n].posdm[1]=dmeanyFunc(dun);
-    currentConfig[n].posddm[0]=ddmeanxFunc(dun);
+    //currentConfig[n].posddm[0]=ddmeanxFunc(dun);
     currentConfig[n].posddm[1]=ddmeanyFunc(dun);
     currentConfig[n].B[0]=BxxFunc(dun);
     currentConfig[n].B[1]=ByyFunc(dun);
