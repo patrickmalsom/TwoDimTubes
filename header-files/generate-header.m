@@ -2,7 +2,7 @@
 
 GenHeader[]:=Module[{},
   (* Mathematica script to generate potentials for the c header files *)
-  Cdef[fun__]:=StringReplace[StringReplace[ToString[CForm[FullSimplify[Expand[fun]]]],{"Sinh("->"sinh(","Cosh("->"cosh(","Tanh("->"tanh(","Csch("->"1/sinh(","Sech("->"1/cosh(","Coth("->"1/tanh(","Power("->"pow("," "->""}],"pow(E,"->"exp("];
+  Cdef[fun__]:=StringReplace[StringReplace[ToString[CForm[FullSimplify[Expand[fun]]]],{"Sinh("->"sinh(","Cosh("->"cosh(","Tanh("->"tanh(","Csch("->"1/sinh(","Sech("->"1/cosh(","Coth("->"1/tanh(","Power("->"gsl_pow_int("," "->""}],"gsl_pow_int(E,"->"exp("];
   file=OpenWrite["TwoDimTubes.h"];
 
   WriteString[file,"// TwoDimTubes.h - Constants for Two Dimensional Tubes HMC \n"];

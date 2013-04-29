@@ -9,4 +9,4 @@ export GSL_RNG_SEED=$(head -1 /dev/urandom |od -N 10 |awk '{print $2}')
 #export GSL_RNG_SEED=1234
 
 #run the executable with the input file
-./TwoDimTubes.out inputPos.dat >out
+./TwoDimTubes.out inputPos.dat inputMean.dat > out
