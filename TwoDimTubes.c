@@ -209,7 +209,7 @@ int main(int argc, char *argv[])
   averages *tubeAve = calloc(NUMBEAD,sizeof(averages));
 
   //Incrimenter Declarations
-  int i;
+  int i,n;
   int acc,rej; // trackers for acceptance of MHMC loop
   int MDloopi, MDloopirand, MCloopi, tubeloopi; 
   int tau=0; //incrimenter used in the averaging for normalization
