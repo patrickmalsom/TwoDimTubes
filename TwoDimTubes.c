@@ -308,6 +308,14 @@ int main(int argc, char *argv[])
   &(configCurrent[lineNum].posddm[0])) ){
     lineNum++;
   }
+  for(n=0;n<NUMBEAD;n++){
+    configOld[n].posm[0]=configCurrent[n].posm[0];
+    configNew[n].posm[0]=configCurrent[n].posm[0];
+    configOld[n].posdm[0]=configCurrent[n].posdm[0];
+    configNew[n].posdm[0]=configCurrent[n].posdm[0];
+    configOld[n].posddm[0]=configCurrent[n].posddm[0];
+    configNew[n].posddm[0]=configCurrent[n].posddm[0];
+  }
 
   //===============================================================
   // GNU Scientific Library Random Number Setup
