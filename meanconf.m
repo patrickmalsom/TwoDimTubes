@@ -1,6 +1,10 @@
 #!/usr/local/bin/MathematicaScript -script
-
 argv=$ScriptCommandLine;
+
+(* script to take an average of all output files *)
+(* files MUST start at 10000 and go in increments of 10000 to be able to be averaged correctly *)
+(* you must be in teh main directory where the files are stored. no absolute paths allowed *)
+(* in1 : number of files to average ex:3 -> (10000+20000+30000)/3 *)
 
 Num = ToExpression[argv[[2]]];
 
