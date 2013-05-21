@@ -11,5 +11,5 @@ TwoDimTubes: TwoDimTubes.o
 	${CC} ${LFLAGS} TwoDimTubes.o -o TwoDimTubes.out
  
 clean: 
-	rm -f TwoDimTubes.o TwoDimTubes.out
+	rm -f TwoDimTubes.o TwoDimTubes.out out StdOut.dat
 
