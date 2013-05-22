@@ -388,7 +388,7 @@ int main(int argc, char *argv[])
       //acc ratio of newconfig
       ProbAccRatio(configCurrent, configNew, &ratio);
  
-      if(MCloopi%10==0){
+      if(MCloopi%100==0){
         fprintf(pStdOut,"SPDE ratio: %+0.10f \n",ratio);
       }
       // ==================================================================================
@@ -411,7 +411,7 @@ int main(int argc, char *argv[])
         LInverse(configNew, vecdg, veci1, veci0);
  
         //calculate the average distance moved in the step and print to std out
-        fprintf(pStdOut,"MDi: %.5d | MDi*h: %0.5f | MD ratio: %+0.5f \n",MDloopi,MDloopi*sqrt(2*DT),ratio); 
+        //fprintf(pStdOut,"MDi: %.5d | MDi*h: %0.5f | MD ratio: %+0.5f \n",MDloopi,MDloopi*sqrt(2*DT),ratio); 
         //printDistance(configNew, savePos);
  
         //acc ratio of newconfig
@@ -439,7 +439,7 @@ int main(int argc, char *argv[])
       LInverse(configCurrent, vecdg, veci1, veci0);
       accumulateAverages(tubeAve,configCurrent,&tau);
 
-      if(MCloopi%10==0){
+      if(MCloopi%100==0){
         fprintf(pStdOut,"rand=%+0.6f  Exp[ratio]=%+0.6f   dt= %+0.5e     acc= %i      rej= %i  \n",randUniform,exp(ratio/(2.0*TEMP)),DT,acc,rej);
 
       }
