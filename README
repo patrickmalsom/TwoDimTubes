@@ -1,0 +1,40 @@
+TwoDimTubes
+===========
+
+Tubes HMC for two dimensional potentials
+
+The main program is *TwoDimTubes.c*. This program performs all of the relevant calculations for the Two Dimensional Gaussian Tubes HMC algorithm. 
+
+The script used to initiate a run is *runit*. This script sets up the GSL random number generator before starting a run. The inputs are the initial path (x,y) *inputPos.dat* and the mean path (x) and its derivatives (dx/dt and d^2x/dt^2) *inputMean.dat*.
+
+There are 3 types of output files made with the routine
+- *out*: input parameters for the run along with the gradients of the KL distance minimizer.
+- *StdOut.dat*: Stores the acceptances and rejections as the HMC procedes. Also stores a sample of the SPDE ratio (error in the integration) along with the total error in integration for the whole proposed MHMC step. All of these numbers are printed at a single MC step, there is no averaging done. 
+- *Output-Config-#######.dat*: Stores the state of the configuration at any point in the simulation. Note that the name of the file is given in TwoDimTubes.h as "PotentialString", and can change. The number at the end of the file specifies how many MHMC steps have been performed since the beginning of the run. The data structure of the files is shown in the next section.
+
+## Output-Config File Structure ##
+1. Ending x positions
+2. Ending y positions
+3. E[x] (averaged over MCMC steps in Output-Config file)
+4. E[y] (averaged over MCMC steps in Output-Config file)
+5. Bxx (calculated from input in TwoDimTubes.h)
+6. Byy (calculated from input in TwoDimTubes.h)
+7. Bxy (calculated from input in TwoDimTubes.h)
+8. E[(DeltaI)*(LinvBz_x - z_x)]
+9. E[DeltaI] (constant)
+10. E[LinvBz_x - z_x]
+11. E[(DeltaI)*(LinvBz_y - z_y)]
+12. E[DeltaI] (constant)
+13. E[LinvBz_y - z_y]
+14. E[(DeltaI)*(z_x*z_x)]
+15. E[DeltaI] (constant)
+16. E[z_x*z_x]
+17. E[(DeltaI)*(z_y*z_y)]
+18. E[DeltaI] (constant)
+19. E[z_y*z_y]
+20. E[(DeltaI)*(z_x*z_y)]
+21. E[DeltaI] (constant)
+22. E[z_x*z_y]
+23. E[GradGx(x,y)] (G=0.5F^2-TLaplacianV)
+24. E[GradGy(x,y)] (G=0.5F^2-TLaplacianV)
+25. E[G(x,y)] (G=0.5F^2-TLaplacianV)
