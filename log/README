@@ -1,0 +1,7 @@
+Directory for storing condor logs
+
+out is the standard out
+err is the standard error
+log is condor logging
+
+the extension is the cluster.process number attached to the log files
