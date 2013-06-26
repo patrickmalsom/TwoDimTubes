@@ -294,7 +294,7 @@ int main(int argc, char *argv[])
   //===============================================================
   //Input file to be read as first command line argument
   if(argv[2]==NULL) { 
-    printf("No mean/B file. Exiting!\n");
+    printf("No mean file. Exiting!\n");
     exit(-1);
   }
   else {
@@ -315,6 +315,34 @@ int main(int argc, char *argv[])
     configNew[n].posdm[0]=configCurrent[n].posdm[0];
     configOld[n].posddm[0]=configCurrent[n].posddm[0];
     configNew[n].posddm[0]=configCurrent[n].posddm[0];
+  }
+
+  //===============================================================
+  // Reading the mean configuration file into mean lists
+  //===============================================================
+  //Input file to be read as first command line argument
+  if(argv[3]==NULL) { 
+    printf("No B file. Exiting!\n");
+    exit(-1);
+  }
+  else {
+    printf("B input file: %s\n",argv[2]);
+  }
+  lineNum = 0;
+  FILE *fptrB = fopen(argv[3],"r");
+  while( EOF != fscanf(fptrB,"%lf %lf %lf",
+  &(configCurrent[lineNum].B[0]),
+  &(configCurrent[lineNum].B[1]),
+  &(configCurrent[lineNum].B[2])) ){
+    lineNum++;
+  }
+  for(n=0;n<NUMBEAD;n++){
+    configOld[n].B[0]=configCurrent[n].B[0];
+    configNew[n].B[0]=configCurrent[n].B[0];
+    configOld[n].B[1]=configCurrent[n].B[1];
+    configNew[n].B[1]=configCurrent[n].B[1];
+    configOld[n].B[2]=configCurrent[n].B[2];
+    configNew[n].B[2]=configCurrent[n].B[2];
   }
 
   //===============================================================
@@ -958,9 +986,9 @@ void initMeans(config *currentConfig)
     currentConfig[n].posdm[1]=dmeanyFunc(dun);
     //currentConfig[n].posddm[0]=ddmeanxFunc(dun);
     currentConfig[n].posddm[1]=ddmeanyFunc(dun);
-    currentConfig[n].B[0]=BxxFunc(dun);
-    currentConfig[n].B[1]=ByyFunc(dun);
-    currentConfig[n].B[2]=BxyFunc(dun);
+    //currentConfig[n].B[0]=BxxFunc(dun);
+    //currentConfig[n].B[1]=ByyFunc(dun);
+    //currentConfig[n].B[2]=BxyFunc(dun);
   }
 }
 
