@@ -1,0 +1,15 @@
+#!/bin/bash
+
+for j in {1..2}
+do
+  for i in {1..2}
+  do
+    ./runit
+    ./steep-descent/steep-descent.m
+    cp 2WellTubes-T0.15-pos0001000.dat inputPos.dat
+    ./mkinputFile.sh inputPos.dat
+  done
+  ./steep-descent/shoot-mean.m
+  cp newMean.tsv inputMean.dat
+done
+  
