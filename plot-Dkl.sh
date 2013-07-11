@@ -8,6 +8,14 @@
 echo "This script generates terminal plots of configurations for"
 echo "the Tubes HMC routine for a 2D potential"
 
+if [ $# -eq 0 ] ; then
+  echo "========================================="
+  echo 'Please specify the output file!!! Exiting.'
+  echo 'put any string as an arg to proceed anyways.'
+  echo "========================================="
+  exit 0
+fi
+
 pltnum=1
 while [ $pltnum -gt 0 ]; 
 do 
